@@ -7,5 +7,5 @@ Règle de gestion
     Un vol peut être effectué plusieurs fois dans la journée
     Un vol peut être effectué sur plusieurs jours
 
-Fonctionnalite
+Fonctionnalité
 Un client veut acheter des places pour un vol de Aéroport de TNR à l'aéroport de Nosy Be pour le 12 janvier à 12h
