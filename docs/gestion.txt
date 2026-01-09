@@ -1,0 +1,12 @@
+COMPAGNIE AERIENNE
+
+Regle de gestion
+    Il y a plusieurs avions
+    Chaque avion a sa capacité
+    Un vol est défini par son aéroportde d'embarquement et son aéroportde débarquement
+    Un vol peut être effectué par plusieurs avions
+    Un vol peut être effectué plusieurs fois dans la journée
+    Un vol peut être effectué sur plusieurs jours
+
+Fonctionnalite
+Un client veut acheter des places pour un vol de Aéroport de TNR à l'aéroport de Nosy Be pour le 12 janvier à 12h
