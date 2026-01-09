@@ -1,6 +1,5 @@
 package com.fly.andco.model.avions;
 
-import com.fly.andco.model.compagnies.Compagnie;
 import jakarta.persistence.*;
 
 @Entity
@@ -9,11 +8,8 @@ public class Avion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_avion")
     private Long idAvion;
-
-    @ManyToOne
-    @JoinColumn(name = "id_compagnie", nullable = false)
-    private Compagnie compagnie;
 
     @Column(nullable = false, length = 50)
     private String modele;
@@ -24,6 +20,15 @@ public class Avion {
     @Column(name = "numero_immatriculation", nullable = false, unique = true, length = 20)
     private String numeroImmatriculation;
 
+    // Constructeurs
+    public Avion() {}
+
+    public Avion(String modele, int capacite, String numeroImmatriculation) {
+        this.modele = modele;
+        this.capacite = capacite;
+        this.numeroImmatriculation = numeroImmatriculation;
+    }
+
     // Getters & Setters
     public Long getIdAvion() {
         return idAvion;
@@ -31,14 +36,6 @@ public class Avion {
 
     public void setIdAvion(Long idAvion) {
         this.idAvion = idAvion;
-    }
-
-    public Compagnie getCompagnie() {
-        return compagnie;
-    }
-
-    public void setCompagnie(Compagnie compagnie) {
-        this.compagnie = compagnie;
     }
 
     public String getModele() {
@@ -63,5 +60,10 @@ public class Avion {
 
     public void setNumeroImmatriculation(String numeroImmatriculation) {
         this.numeroImmatriculation = numeroImmatriculation;
+    }
+
+    // Méthode utile pour affichage
+    public String getDisplayName() {
+        return modele + " (" + numeroImmatriculation + ")";
     }
 }

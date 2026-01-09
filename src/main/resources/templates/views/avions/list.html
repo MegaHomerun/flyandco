@@ -50,7 +50,7 @@
                     <div class="card">
                         <div class="card-header">
                             <h5 class="card-title">
-                                Simple Datatable
+                                Liste des avions
                             </h5>
                         </div>
                         <div class="card-body">
@@ -58,7 +58,6 @@
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Compagnie</th>
                                         <th>Modèle</th>
                                         <th>Capacité</th>
                                         <th>Immatriculation</th>
@@ -68,7 +67,6 @@
                                 <tbody>
                                     <tr th:each="avion : ${avions}">
                                         <td th:text="${avion.idAvion}"></td>
-                                        <td th:text="${avion.compagnie.nom}"></td> <!-- relation avec compagnie -->
                                         <td th:text="${avion.modele}"></td>
                                         <td th:text="${avion.capacite}"></td>
                                         <td th:text="${avion.numeroImmatriculation}"></td>
@@ -83,11 +81,7 @@
             <footer>
                 <div class="footer clearfix mb-0 text-muted">
                     <div class="float-start">
-                        <p>2023 &copy; Mazer</p>
-                    </div>
-                    <div class="float-end">
-                        <p>Crafted with <span class="text-danger"><i class="bi bi-heart-fill icon-mid"></i></span>
-                            by <a href="https://saugi.me">Saugi</a></p>
+                        <p>2026 &copy; FlyAndCo</p>
                     </div>
                 </div>
             </footer>

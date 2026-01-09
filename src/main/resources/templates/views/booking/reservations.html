@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes réservations - FlyAndCo</title>
+    
+    <link rel="shortcut icon" th:href="@{/assets/compiled/svg/favicon.svg}" type="image/x-icon">
+    <link rel="stylesheet" th:href="@{/assets/compiled/css/app.css}">
+    <link rel="stylesheet" th:href="@{/assets/compiled/css/app-dark.css}">
+</head>
+
+<body>
+    <script th:src="@{/assets/static/js/initTheme.js}"></script>
+    <div id="app">
+        <div th:replace="fragments/sidebar :: sidebar"></div>
+
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            
+            <div class="page-heading">
+                <div class="page-title">
+                    <div class="row">
+                        <div class="col-12 col-md-6 order-md-1 order-last">
+                            <h3>Mes réservations</h3>
+                            <p class="text-subtitle text-muted">Consultez vos billets achetés</p>
+                        </div>
+                        <div class="col-12 col-md-6 order-md-2 order-first">
+                            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/booking">Recherche</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">Mes réservations</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message de succès -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> <span th:text="${success}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Formulaire de recherche par email -->
+                <section class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Rechercher mes réservations</h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="/booking/mes-reservations" method="get">
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label for="email" class="form-label">Adresse email</label>
+                                        <input type="email" class="form-control" id="email" name="email" 
+                                               th:value="${email}" placeholder="Entrez votre email" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3 d-flex align-items-end">
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="bi bi-search"></i> Rechercher
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Liste des réservations -->
+                <section class="section" th:if="${reservations != null && !reservations.isEmpty()}">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Vos réservations</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>N° Réservation</th>
+                                            <th>Vol</th>
+                                            <th>Date</th>
+                                            <th>Horaire</th>
+                                            <th>Places</th>
+                                            <th>Total</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="reservation : ${reservations}">
+                                            <td>
+                                                <strong th:text="${'#' + reservation.idReservation}"></strong>
+                                            </td>
+                                            <td>
+                                                <span th:text="${reservation.volProgramme.vol.aeroportDepart.codeIata + ' → ' + reservation.volProgramme.vol.aeroportArrivee.codeIata}"></span>
+                                                <br>
+                                                <small class="text-muted" th:text="${reservation.volProgramme.vol.aeroportDepart.ville + ' - ' + reservation.volProgramme.vol.aeroportArrivee.ville}"></small>
+                                            </td>
+                                            <td th:text="${#temporals.format(reservation.volProgramme.dateHeureDepart, 'dd/MM/yyyy')}"></td>
+                                            <td>
+                                                <span th:text="${#temporals.format(reservation.volProgramme.dateHeureDepart, 'HH:mm')}"></span>
+                                                -
+                                                <span th:text="${#temporals.format(reservation.volProgramme.dateHeureArrivee, 'HH:mm')}"></span>
+                                            </td>
+                                            <td th:text="${reservation.nombrePlaces}"></td>
+                                            <td>
+                                                <strong th:text="${#numbers.formatDecimal(reservation.montantTotal, 0, 'COMMA', 0, 'POINT') + ' MGA'}"></strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge" 
+                                                      th:classappend="${reservation.statut == 'confirmée' ? 'bg-success' : 'bg-secondary'}"
+                                                      th:text="${reservation.statut}"></span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Message si aucune réservation -->
+                <section class="section" th:if="${email != null && (reservations == null || reservations.isEmpty())}">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Aucune réservation trouvée pour cet email.
+                    </div>
+                </section>
+
+                <!-- Lien vers nouvelle recherche -->
+                <div class="mt-3">
+                    <a href="/booking" class="btn btn-outline-primary">
+                        <i class="bi bi-airplane"></i> Nouvelle recherche de vol
+                    </a>
+                </div>
+            </div>
+
+            <footer>
+                <div class="footer clearfix mb-0 text-muted">
+                    <div class="float-start">
+                        <p>2026 &copy; FlyAndCo</p>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script th:src="@{/assets/static/js/components/dark.js}"></script>
+    <script th:src="@{/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js}"></script>
+    <script th:src="@{/assets/compiled/js/app.js}"></script>
+</body>
+
+</html>
