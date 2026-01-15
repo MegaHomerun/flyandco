@@ -9,3 +9,8 @@ Règle de gestion
 
 Fonctionnalité
 Un client veut acheter des places pour un vol de Aéroport de TNR à l'aéroport de Nosy Be pour le 12 janvier à 12h
+
+15/01/2026
+Une avion possède des places première classe et des places économiques
+Pour un vol tana- Nosy Be, Une place première classe coûte 1 200 000Ar et une place économiques 700 000Ar
+Donner la valeur maximale qu'un avion peut générer pour un vol
