@@ -17,21 +17,37 @@ public class Avion {
     @Column(nullable = false)
     private int capacite;
 
+    @Column(nullable = false)
+    private int premiere_classe;
+
+    @Column(nullable = false)
+    private int classe_economique ;
+
     @Column(name = "numero_immatriculation", nullable = false, unique = true, length = 20)
     private String numeroImmatriculation;
 
     // Constructeurs
     public Avion() {}
 
-    public Avion(String modele, int capacite, String numeroImmatriculation) {
+    public Avion(String modele, int capacite, String numeroImmatriculation, int premiere_classe, int classe_economique) {
         this.modele = modele;
         this.capacite = capacite;
         this.numeroImmatriculation = numeroImmatriculation;
+        this.premiere_classe = premiere_classe;
+        this.classe_economique = classe_economique;
     }
 
     // Getters & Setters
     public Long getIdAvion() {
         return idAvion;
+    }
+
+    public int getPremiere_classe() {
+        return premiere_classe;
+    }
+
+    public int getClasse_economique() {
+        return classe_economique;
     }
 
     public void setIdAvion(Long idAvion) {
@@ -60,6 +76,14 @@ public class Avion {
 
     public void setNumeroImmatriculation(String numeroImmatriculation) {
         this.numeroImmatriculation = numeroImmatriculation;
+    }
+
+    public void setPremiere_classe(int premiere_classe) {
+        this.premiere_classe = premiere_classe;
+    }
+
+    public void setClasse_economique(int classe_economique) {
+        this.classe_economique = classe_economique;
     }
 
     // Méthode utile pour affichage

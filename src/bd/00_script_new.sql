@@ -34,8 +34,6 @@ CREATE TABLE Avion (
     id_avion SERIAL PRIMARY KEY,
     modele VARCHAR(50) NOT NULL,
     capacite INT NOT NULL,
-    premiere_classe INT NOT NULL,
-    classe_economique INT NOT NULL,
     numero_immatriculation VARCHAR(20) UNIQUE NOT NULL
 );
 
