@@ -55,7 +55,7 @@ CREATE TABLE Vol (
 -- Un vol peut être effectué plusieurs fois par jour et sur plusieurs jours
 -- Un vol peut être effectué par plusieurs avions
 -- ============================================================
-CREATE TABLE VolProgramme (
+CREATE TABLE vol_programme (
     id_vol_programme SERIAL PRIMARY KEY,
     id_vol INT NOT NULL,
     id_avion INT NOT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE Reservation (
     date_reservation TIMESTAMP DEFAULT NOW(),
     statut VARCHAR(20) DEFAULT 'confirmée',
     FOREIGN KEY (id_client) REFERENCES Client(id_client),
-    FOREIGN KEY (id_vol_programme) REFERENCES VolProgramme(id_vol_programme)
+    FOREIGN KEY (id_vol_programme) REFERENCES vol_programme(id_vol_programme)
 );
 
 -- ============================================================
@@ -129,7 +129,7 @@ INSERT INTO Vol (id_aeroport_depart, id_aeroport_arrivee) VALUES
 
 -- Programmes de vols pour janvier 2026 (TNR <-> Nosy Be)
 -- Vol TNR -> Nosy Be le 12 janvier 2026 à 12h00
-INSERT INTO VolProgramme (id_vol, id_avion, date_heure_depart, date_heure_arrivee, prix, statut) VALUES
+INSERT INTO vol_programme (id_vol, id_avion, date_heure_depart, date_heure_arrivee, prix, statut) VALUES
 -- 12 janvier 2026 - Vol TNR -> Nosy Be
 (1, 1, '2026-01-12 12:00:00', '2026-01-12 13:30:00', 350000, 'prévu'),
 (1, 2, '2026-01-12 08:00:00', '2026-01-12 09:30:00', 380000, 'prévu'),

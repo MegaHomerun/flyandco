@@ -40,8 +40,9 @@ public class VolProgrammeService {
      * Recherche des vols programmés par aéroports de départ/arrivée et date
      */
     public List<VolProgramme> rechercherVols(Long idDepart, Long idArrivee, LocalDate date) {
-        LocalDateTime dateTime = date.atStartOfDay();
-        return volProgrammeRepository.findByAeroportsAndDate(idDepart, idArrivee, dateTime);
+        LocalDateTime debut = date.atStartOfDay();
+        LocalDateTime fin = date.plusDays(1).atStartOfDay();
+        return volProgrammeRepository.findByAeroportsAndDateRange(idDepart, idArrivee, debut, fin);
     }
     
     /**

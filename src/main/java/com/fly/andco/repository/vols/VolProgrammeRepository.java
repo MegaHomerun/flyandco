@@ -12,11 +12,25 @@ import java.util.List;
 @Repository
 public interface VolProgrammeRepository extends JpaRepository<VolProgramme, Long> {
     
-    // Recherche de vols programmés par aéroports et date
+    // Recherche de vols programmés par aéroports et plage de date
     @Query("SELECT vp FROM VolProgramme vp " +
            "WHERE vp.vol.aeroportDepart.idAeroport = :idDepart " +
            "AND vp.vol.aeroportArrivee.idAeroport = :idArrivee " +
-           "AND DATE(vp.dateHeureDepart) = DATE(:dateDepart) " +
+           "AND vp.dateHeureDepart >= :dateDebut " +
+           "AND vp.dateHeureDepart < :dateFin " +
+           "ORDER BY vp.dateHeureDepart")
+    List<VolProgramme> findByAeroportsAndDateRange(
+        @Param("idDepart") Long idDepart,
+        @Param("idArrivee") Long idArrivee,
+        @Param("dateDebut") LocalDateTime dateDebut,
+        @Param("dateFin") LocalDateTime dateFin
+    );
+    
+    // Recherche de vols programmés par aéroports et date (compatibilité)
+    @Query("SELECT vp FROM VolProgramme vp " +
+           "WHERE vp.vol.aeroportDepart.idAeroport = :idDepart " +
+           "AND vp.vol.aeroportArrivee.idAeroport = :idArrivee " +
+           "AND CAST(vp.dateHeureDepart AS date) = CAST(:dateDepart AS date) " +
            "ORDER BY vp.dateHeureDepart")
     List<VolProgramme> findByAeroportsAndDate(
         @Param("idDepart") Long idDepart,
