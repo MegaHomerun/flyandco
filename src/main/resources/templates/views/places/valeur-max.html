@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valeur Maximale par Avion - FlyAndCo</title>
+    
+    <link rel="shortcut icon" href="./assets/compiled/svg/favicon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="assets/extensions/simple-datatables/style.css">
+    <link rel="stylesheet" href="./assets/compiled/css/table-datatable.css">
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/app-dark.css">
+</head>
+
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div th:replace="fragments/sidebar :: sidebar"></div>
+
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            
+            <div class="page-heading">
+                <div class="page-title">
+                    <div class="row">
+                        <div class="col-12 col-md-6 order-md-1 order-last">
+                            <h3>Valeur Maximale par Avion</h3>
+                            <p class="text-subtitle text-muted">Revenu potentiel maximum par vol</p>
+                        </div>
+                        <div class="col-12 col-md-6 order-md-2 order-first">
+                            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/home">FlyAndCo</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">Valeur Max</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtres -->
+                <section class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Filtres</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="get" action="/valeur-max" class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="idVol" class="form-label">Route (Vol)</label>
+                                    <select class="form-select" id="idVol" name="idVol">
+                                        <option value="">Toutes les routes</option>
+                                        <option th:each="vol : ${vols}" 
+                                                th:value="${vol.idVol}" 
+                                                th:text="${vol.displayName}"
+                                                th:selected="${idVolSelected != null && idVolSelected == vol.idVol}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="idAvion" class="form-label">Avion</label>
+                                    <select class="form-select" id="idAvion" name="idAvion">
+                                        <option value="">Tous les avions</option>
+                                        <option th:each="avion : ${avions}" 
+                                                th:value="${avion.idAvion}" 
+                                                th:text="${avion.displayName}"
+                                                th:selected="${idAvionSelected != null && idAvionSelected == avion.idAvion}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary me-2">Filtrer</button>
+                                    <a href="/valeur-max" class="btn btn-secondary">Réinitialiser</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Résultats -->
+                <section class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Résultats</h5>
+                        </div>
+                        <div class="card-body">
+                            <div th:if="${#lists.isEmpty(resultats)}" class="alert alert-info">
+                                Aucun résultat trouvé.
+                            </div>
+                            <table th:if="${!#lists.isEmpty(resultats)}" class="table table-striped" id="table1">
+                                <thead>
+                                    <tr>
+                                        <th>Avion</th>
+                                        <th>Route</th>
+                                        <th class="text-end">Valeur Maximale</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="r : ${resultats}">
+                                        <td th:text="${r.avionDisplay}"></td>
+                                        <td th:text="${r.route}"></td>
+                                        <td class="text-end fw-bold text-success" th:text="${r.valeurMaxFormatee}"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <footer>
+                <div class="footer clearfix mb-0 text-muted">
+                    <div class="float-start">
+                        <p>2026 &copy; FlyAndCo</p>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+</body>
+<script src="assets/static/js/components/dark.js"></script>
+<script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+<script src="assets/compiled/js/app.js"></script>
+<script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
+<script src="assets/static/js/pages/simple-datatables.js"></script>
+
+</html>
