@@ -1,0 +1,10 @@
+
+
+avion
+chaque avion a sa capacité
+notion de trajet
+ex: tana - nosy be
+    nosy be - comore
+
+voyage
+ date zao misy avion ty miainga am 8h eto tana ho any sainte marie
