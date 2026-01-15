@@ -121,15 +121,21 @@ public class BookingController {
     }
     
     /**
-     * Affiche les réservations d'un client
+     * Affiche les réservations d'un client ou toutes les réservations
      */
     @GetMapping("/mes-reservations")
     public String mesReservations(@RequestParam(value = "email", required = false) String email, Model model) {
+        List<Reservation> reservations;
+        
         if (email != null && !email.isEmpty()) {
-            List<Reservation> reservations = reservationService.getByClientEmail(email);
-            model.addAttribute("reservations", reservations);
+            reservations = reservationService.getByClientEmail(email);
             model.addAttribute("email", email);
+        } else {
+            // Afficher toutes les réservations
+            reservations = reservationService.getAll();
         }
+        
+        model.addAttribute("reservations", reservations);
         return "views/booking/reservations";
     }
     

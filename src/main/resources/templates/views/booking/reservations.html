@@ -51,20 +51,23 @@
                 <section class="section">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="card-title">Rechercher mes réservations</h5>
+                            <h5 class="card-title">Filtrer par email</h5>
                         </div>
                         <div class="card-body">
                             <form action="/booking/mes-reservations" method="get">
                                 <div class="row">
                                     <div class="col-md-8 mb-3">
-                                        <label for="email" class="form-label">Adresse email</label>
+                                        <label for="email" class="form-label">Adresse email (optionnel)</label>
                                         <input type="email" class="form-control" id="email" name="email" 
-                                               th:value="${email}" placeholder="Entrez votre email" required>
+                                               th:value="${email}" placeholder="Laissez vide pour voir toutes les réservations">
                                     </div>
-                                    <div class="col-md-4 mb-3 d-flex align-items-end">
-                                        <button type="submit" class="btn btn-primary w-100">
-                                            <i class="bi bi-search"></i> Rechercher
+                                    <div class="col-md-4 mb-3 d-flex align-items-end gap-2">
+                                        <button type="submit" class="btn btn-primary flex-grow-1">
+                                            <i class="bi bi-search"></i> Filtrer
                                         </button>
+                                        <a href="/booking/mes-reservations" class="btn btn-secondary">
+                                            <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+                                        </a>
                                     </div>
                                 </div>
                             </form>
@@ -76,7 +79,11 @@
                 <section class="section" th:if="${reservations != null && !reservations.isEmpty()}">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="card-title">Vos réservations</h5>
+                            <h5 class="card-title">
+                                Réservations 
+                                <span th:if="${email != null}" class="badge bg-info" th:text="'pour ' + ${email}"></span>
+                                <span th:if="${email == null}" class="badge bg-secondary">Toutes</span>
+                            </h5>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -126,9 +133,11 @@
                 </section>
 
                 <!-- Message si aucune réservation -->
-                <section class="section" th:if="${email != null && (reservations == null || reservations.isEmpty())}">
+                <section class="section" th:if="${reservations == null || reservations.isEmpty()}">
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Aucune réservation trouvée pour cet email.
+                        <i class="bi bi-info-circle"></i> 
+                        <span th:if="${email != null}">Aucune réservation trouvée pour cet email.</span>
+                        <span th:if="${email == null}">Aucune réservation enregistrée dans le système.</span>
                     </div>
                 </section>
 
