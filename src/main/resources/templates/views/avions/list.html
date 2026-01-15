@@ -48,10 +48,11 @@
                 </div>
                 <section class="section">
                     <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title">
-                                Liste des avions
-                            </h5>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Liste des avions</h5>
+                            <a href="/avions/valeurs-maximales" class="btn btn-primary btn-sm">
+                                <i class="bi bi-calculator"></i> Valeurs maximales
+                            </a>
                         </div>
                         <div class="card-body">
                             <table class="table table-striped" id="table1">
@@ -59,8 +60,11 @@
                                     <tr>
                                         <th>ID</th>
                                         <th>Modèle</th>
-                                        <th>Capacité</th>
                                         <th>Immatriculation</th>
+                                        <th>Première classe</th>
+                                        <th>Économique</th>
+                                        <th>Capacité totale</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
 
@@ -68,8 +72,24 @@
                                     <tr th:each="avion : ${avions}">
                                         <td th:text="${avion.idAvion}"></td>
                                         <td th:text="${avion.modele}"></td>
-                                        <td th:text="${avion.capacite}"></td>
                                         <td th:text="${avion.numeroImmatriculation}"></td>
+                                        <td>
+                                            <span th:each="config : ${configurations}" 
+                                                  th:if="${config.avion.idAvion == avion.idAvion and config.typePlace.nom == 'Première classe'}"
+                                                  th:text="${config.nombrePlaces}">-</span>
+                                        </td>
+                                        <td>
+                                            <span th:each="config : ${configurations}" 
+                                                  th:if="${config.avion.idAvion == avion.idAvion and config.typePlace.nom == 'Économique'}"
+                                                  th:text="${config.nombrePlaces}">-</span>
+                                        </td>
+                                        <td th:text="${avion.capacite}"></td>
+                                        <td>
+                                            <a th:href="@{/avions/{id}/valeur-maximale(id=${avion.idAvion})}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-graph-up"></i> Valeur max
+                                            </a>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
