@@ -34,6 +34,8 @@ CREATE TABLE Avion (
     id_avion SERIAL PRIMARY KEY,
     modele VARCHAR(50) NOT NULL,
     capacite INT NOT NULL,
+    premiere_classe INT NOT NULL,
+    classe_economique INT NOT NULL,
     numero_immatriculation VARCHAR(20) UNIQUE NOT NULL
 );
 
@@ -109,12 +111,28 @@ INSERT INTO Aeroport (nom, ville, pays, code_iata, code_icao) VALUES
 ('Aéroport de Mahajanga', 'Mahajanga', 'Madagascar', 'MJN', 'FMNM');
 
 -- Avions disponibles
-INSERT INTO Avion (modele, capacite, numero_immatriculation) VALUES
-('ATR 72-600', 70, '5R-MJA'),
-('Boeing 737-800', 180, '5R-MJB'),
-('Airbus A320', 150, '5R-MJC'),
-('ATR 42-500', 48, '5R-MJD'),
-('Embraer E190', 100, '5R-MJE');
+INSERT INTO Avion (
+    modele,
+    capacite,
+    premiere_classe,
+    classe_economique,
+    numero_immatriculation
+) VALUES
+-- ATR 72-600 (souvent 100% éco ou très peu de business)
+('ATR 72-600', 70, 4, 66, '5R-MJA'),
+
+-- Boeing 737-800
+('Boeing 737-800', 180, 16, 164, '5R-MJB'),
+
+-- Airbus A320
+('Airbus A320', 150, 12, 138, '5R-MJC'),
+
+-- ATR 42-500
+('ATR 42-500', 48, 4, 44, '5R-MJD'),
+
+-- Embraer E190
+('Embraer E190', 100, 8, 92, '5R-MJE');
+
 
 -- Vols (routes) - définition des liaisons
 INSERT INTO Vol (id_aeroport_depart, id_aeroport_arrivee) VALUES
