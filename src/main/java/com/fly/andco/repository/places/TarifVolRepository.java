@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TarifVolRepository extends JpaRepository<TarifVol, Long> {
@@ -15,4 +16,7 @@ public interface TarifVolRepository extends JpaRepository<TarifVol, Long> {
     
     @Query("SELECT tv FROM TarifVol tv WHERE tv.vol.idVol = :idVol ORDER BY tv.typePlace.nom DESC")
     List<TarifVol> findTarifsByVol(@Param("idVol") Long idVol);
+    
+    @Query("SELECT tv FROM TarifVol tv WHERE tv.vol.idVol = :idVol AND tv.typePlace.idTypePlace = :idTypePlace")
+    Optional<TarifVol> findByVolIdVolAndTypePlaceIdTypePlace(@Param("idVol") Long idVol, @Param("idTypePlace") Long idTypePlace);
 }

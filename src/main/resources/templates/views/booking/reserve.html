@@ -91,10 +91,6 @@
                                         <span>Places disponibles:</span>
                                         <span class="badge bg-success" th:text="${placesDisponibles}"></span>
                                     </li>
-                                    <li class="list-group-item d-flex justify-content-between">
-                                        <span>Prix par place:</span>
-                                        <strong class="text-primary" th:text="${#numbers.formatDecimal(vol.prix, 0, 'COMMA', 0, 'POINT') + ' MGA'}"></strong>
-                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -109,6 +105,7 @@
                             <div class="card-body">
                                 <form action="/booking/reserve" method="post">
                                     <input type="hidden" name="idVolProgramme" th:value="${vol.idVolProgramme}">
+                                    <input type="hidden" id="idVol" th:value="${vol.vol.idVol}">
                                     
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
@@ -134,6 +131,27 @@
                                     
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
+                                            <label for="idTypePlace" class="form-label">Type de place *</label>
+                                            <select class="form-select" id="idTypePlace" name="idTypePlace" required onchange="updateTotal()">
+                                                <option th:each="tp : ${typePlaces}"
+                                                        th:value="${tp.idTypePlace}" 
+                                                        th:text="${tp.nom}"
+                                                        th:selected="${tp.nom == 'Économique'}"></option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="idCategorie" class="form-label">Catégorie passager *</label>
+                                            <select class="form-select" id="idCategorie" name="idCategorie" required onchange="updateTotal()">
+                                                <option th:each="cat : ${categories}"
+                                                        th:value="${cat.idCategoriePassager}" 
+                                                        th:text="${cat.nom + ' (' + cat.trancheAge + ')'}"
+                                                        th:selected="${cat.nom == 'Adulte'}"></option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
                                             <label for="nombrePlaces" class="form-label">Nombre de places *</label>
                                             <select class="form-select" id="nombrePlaces" name="nombrePlaces" required onchange="updateTotal()">
                                                 <option th:each="i : ${#numbers.sequence(1, placesDisponibles > 10 ? 10 : placesDisponibles)}"
@@ -141,9 +159,20 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Total à payer</label>
+                                            <label class="form-label">Prix unitaire</label>
                                             <div class="form-control bg-light">
-                                                <strong id="totalPrice" th:text="${#numbers.formatDecimal(vol.prix, 0, 'COMMA', 0, 'POINT') + ' MGA'}"></strong>
+                                                <span id="prixUnitaire">Chargement...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <div class="alert alert-primary">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="fs-5">Total à payer:</span>
+                                                    <strong class="fs-4" id="totalPrice">Calcul en cours...</strong>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -176,13 +205,34 @@
     <script th:src="@{/assets/compiled/js/app.js}"></script>
     
     <script th:inline="javascript">
-        const prixUnitaire = [[${vol.prix}]];
+        let prixUnitaire = 0;
         
         function updateTotal() {
+            const idVol = document.getElementById('idVol').value;
+            const idTypePlace = document.getElementById('idTypePlace').value;
+            const idCategorie = document.getElementById('idCategorie').value;
             const nombrePlaces = document.getElementById('nombrePlaces').value;
-            const total = prixUnitaire * nombrePlaces;
-            document.getElementById('totalPrice').textContent = total.toLocaleString('fr-FR') + ' MGA';
+            
+            // Appel API pour obtenir le prix
+            fetch(`/booking/api/prix?idVol=${idVol}&idTypePlace=${idTypePlace}&idCategorie=${idCategorie}`)
+                .then(response => response.json())
+                .then(data => {
+                    prixUnitaire = data.prix;
+                    document.getElementById('prixUnitaire').textContent = data.prixFormate;
+                    
+                    const total = prixUnitaire * nombrePlaces;
+                    document.getElementById('totalPrice').textContent = total.toLocaleString('fr-FR') + ' Ar';
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    document.getElementById('prixUnitaire').textContent = 'Erreur';
+                });
         }
+        
+        // Charger le prix initial
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTotal();
+        });
     </script>
 </body>
 

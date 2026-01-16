@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chiffre d'Affaires - FlyAndCo</title>
+    
+    <link rel="shortcut icon" th:href="@{/assets/compiled/svg/favicon.svg}" type="image/x-icon">
+    <link rel="stylesheet" th:href="@{/assets/compiled/css/app.css}">
+    <link rel="stylesheet" th:href="@{/assets/compiled/css/app-dark.css}">
+</head>
+
+<body>
+    <script th:src="@{/assets/static/js/initTheme.js}"></script>
+    <div id="app">
+        <div th:replace="fragments/sidebar :: sidebar"></div>
+
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            
+            <div class="page-heading">
+                <div class="page-title">
+                    <div class="row">
+                        <div class="col-12 col-md-6 order-md-1 order-last">
+                            <h3>Chiffre d'Affaires</h3>
+                            <p class="text-subtitle text-muted">Détail du CA pour ce vol</p>
+                        </div>
+                        <div class="col-12 col-md-6 order-md-2 order-first">
+                            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/booking">Réservations</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">CA Vol</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Informations du vol -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">Informations du vol</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3 text-center">
+                                    <h3 class="text-primary">
+                                        <span th:text="${vol.vol.aeroportDepart.codeIata}"></span> 
+                                        → 
+                                        <span th:text="${vol.vol.aeroportArrivee.codeIata}"></span>
+                                    </h3>
+                                </div>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Date:</span>
+                                        <strong th:text="${#temporals.format(vol.dateHeureDepart, 'dd/MM/yyyy')}"></strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Heure:</span>
+                                        <strong th:text="${#temporals.format(vol.dateHeureDepart, 'HH:mm')}"></strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Avion:</span>
+                                        <strong th:text="${vol.avion.modele}"></strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Immatriculation:</span>
+                                        <strong th:text="${vol.avion.numeroImmatriculation}"></strong>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Résumé CA -->
+                        <div class="card">
+                            <div class="card-header bg-primary">
+                                <h5 class="card-title text-white mb-0">Résumé</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span>Passagers:</span>
+                                    <strong class="fs-5" th:text="${nbPassagers}"></strong>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <span class="fs-5">CA Total:</span>
+                                    <strong class="fs-4 text-success" th:text="${#numbers.formatDecimal(caTotal, 0, 'COMMA', 0, 'POINT') + ' Ar'}"></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Détail du CA -->
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">Détail par type de place et catégorie</h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${#lists.isEmpty(details)}" class="alert alert-info">
+                                    Aucune réservation pour ce vol.
+                                </div>
+                                
+                                <table th:if="${!#lists.isEmpty(details)}" class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Type de place</th>
+                                            <th>Catégorie</th>
+                                            <th class="text-center">Nb places</th>
+                                            <th class="text-end">CA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="detail : ${details}">
+                                            <td th:text="${detail.typePlace}"></td>
+                                            <td>
+                                                <span th:text="${detail.categorie}"></span>
+                                                <span th:if="${detail.categorie == 'Enfant'}" class="badge bg-info ms-1">Tarif réduit</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary" th:text="${detail.nbReservations}"></span>
+                                            </td>
+                                            <td class="text-end">
+                                                <strong th:text="${detail.caTotalFormate}"></strong>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot class="table-dark">
+                                        <tr>
+                                            <td colspan="2"><strong>TOTAL</strong></td>
+                                            <td class="text-center">
+                                                <strong th:text="${nbPassagers}"></strong>
+                                            </td>
+                                            <td class="text-end">
+                                                <strong th:text="${#numbers.formatDecimal(caTotal, 0, 'COMMA', 0, 'POINT') + ' Ar'}"></strong>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mt-3">
+                            <a href="/booking" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Retour
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer>
+                <div class="footer clearfix mb-0 text-muted">
+                    <div class="float-start">
+                        <p>2026 &copy; FlyAndCo</p>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script th:src="@{/assets/static/js/components/dark.js}"></script>
+    <script th:src="@{/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js}"></script>
+    <script th:src="@{/assets/compiled/js/app.js}"></script>
+</body>
+
+</html>

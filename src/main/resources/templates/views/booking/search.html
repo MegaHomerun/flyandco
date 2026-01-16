@@ -134,12 +134,18 @@
                                                       th:text="${vol.placesDisponibles}"></span>
                                             </td>
                                             <td>
-                                                <a th:if="${vol.placesDisponibles > 0}" 
-                                                   th:href="@{/booking/reserve/{id}(id=${vol.volProgramme.idVolProgramme})}" 
-                                                   class="btn btn-sm btn-primary">
-                                                    Réserver
-                                                </a>
-                                                <span th:if="${vol.placesDisponibles == 0}" class="text-muted">Complet</span>
+                                                <div class="btn-group" role="group">
+                                                    <a th:if="${vol.placesDisponibles > 0}" 
+                                                       th:href="@{/booking/reserve/{id}(id=${vol.volProgramme.idVolProgramme})}" 
+                                                       class="btn btn-sm btn-primary">
+                                                        Réserver
+                                                    </a>
+                                                    <span th:if="${vol.placesDisponibles == 0}" class="text-muted me-2">Complet</span>
+                                                    <a th:href="@{/booking/ca/{id}(id=${vol.volProgramme.idVolProgramme})}" 
+                                                       class="btn btn-sm btn-outline-info" title="Voir le CA">
+                                                        <i class="bi bi-bar-chart"></i> CA
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                     </tbody>
