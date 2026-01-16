@@ -124,14 +124,22 @@ CREATE TABLE tarif_categorie (
     id_tarif_categorie SERIAL PRIMARY KEY,
     id_vol INT NOT NULL,                    -- Route concernée
     id_type_place INT NOT NULL,             -- Type de place
-    id_categorie_passager INT NOT NULL,     -- Catégorie (Adulte/Enfant)
-    prix NUMERIC(12,2) NOT NULL,            -- Prix spécifique
+    id_categorie_passager INT NOT NULL,     -- Catégorie (Adulte/Enfant/Bébé)
+    prix NUMERIC(12,2),                     -- Prix fixe (NULL = utiliser pourcentage)
+    pourcentage NUMERIC(5,2),               -- % du tarif adulte (ex: 71.43 pour enfant, 10 pour bébé)
+    frais_reduction NUMERIC(12,2),          -- Frais fixes à soustraire (optionnel)
     FOREIGN KEY (id_vol) REFERENCES Vol(id_vol) ON DELETE CASCADE,
     FOREIGN KEY (id_type_place) REFERENCES type_place(id_type_place) ON DELETE CASCADE,
     FOREIGN KEY (id_categorie_passager) REFERENCES categorie_passager(id_categorie_passager) ON DELETE CASCADE,
     UNIQUE (id_vol, id_type_place, id_categorie_passager)
 );
 ```
+
+#### Logique de calcul du prix
+1. Si `prix` est défini (NOT NULL) → utiliser le prix fixe
+2. Sinon, si `pourcentage` est défini → calculer : `tarif_adulte * pourcentage / 100`
+3. Si `frais_reduction` est défini → soustraire : `prix_calculé - frais_reduction`
+4. Le prix minimum est 0 (jamais négatif)
 
 ### Table `detail_reservation` (détail des passagers par réservation)
 ```sql
@@ -191,13 +199,19 @@ GROUP BY vp.id_vol_programme, vp.id_vol, vp.id_avion, a.modele, a.numero_immatri
 | Bébé | 0 | 1 |
 
 ### Tarifs catégories (Vol TNR → Nosy Be, Économique)
-| Vol | Type place | Catégorie | Prix |
-|-----|------------|-----------|------|
-| TNR → NOS | Économique | Adulte | 700 000 Ar |
-| TNR → NOS | Économique | Enfant | **500 000 Ar** |
-| TNR → NOS | Économique | Bébé | 0 Ar (gratuit) |
-| NOS → TNR | Économique | Adulte | 700 000 Ar |
-| NOS → TNR | Économique | Enfant | **500 000 Ar** |
+| Vol | Type place | Catégorie | Prix fixe | Pourcentage | Frais réduction | Prix calculé |
+|-----|------------|-----------|-----------|-------------|-----------------|--------------|
+| TNR → NOS | Économique | Adulte | 700 000 Ar | NULL | NULL | 700 000 Ar |
+| TNR → NOS | Économique | Enfant | 500 000 Ar | NULL | NULL | **500 000 Ar** |
+| TNR → NOS | Économique | Bébé | NULL | 10% | NULL | 70 000 Ar |
+| NOS → TNR | Économique | Adulte | 700 000 Ar | NULL | NULL | 700 000 Ar |
+| NOS → TNR | Économique | Enfant | 500 000 Ar | NULL | NULL | **500 000 Ar** |
+| NOS → TNR | Économique | Bébé | NULL | 10% | NULL | 70 000 Ar |
+
+#### Exemples de calcul
+- **Adulte** : prix = 700 000 Ar (prix fixe)
+- **Enfant** : prix = 500 000 Ar (prix fixe avec remise spéciale)
+- **Bébé** : prix = 700 000 × 10% = 70 000 Ar (pourcentage du tarif adulte)
 
 ### Jeu de données test (réservations avec enfants)
 Voir script `06_tarif_enfant_ca.sql` pour les données complètes.
@@ -231,10 +245,34 @@ public class TarifCategorie {
     Vol vol;                            // FK → vol
     TypePlace typePlace;                // FK → type_place
     CategoriePassager categoriePassager; // FK → categorie_passager
-    BigDecimal prix;
+    BigDecimal prix;                    // Prix fixe (nullable)
+    BigDecimal pourcentage;             // % du tarif adulte (nullable)
+    BigDecimal fraisReduction;          // Frais à soustraire (nullable)
 }
 ```
 **Table utilisée** : `tarif_categorie`
+
+#### Méthode de calcul du prix effectif
+```java
+public BigDecimal calculerPrixEffectif(BigDecimal tarifAdulte) {
+    // 1. Si prix fixe défini, l'utiliser
+    if (prix != null) return prix;
+    
+    // 2. Sinon calculer avec pourcentage
+    BigDecimal prixCalcule = tarifAdulte;
+    if (pourcentage != null) {
+        prixCalcule = tarifAdulte.multiply(pourcentage).divide(BigDecimal.valueOf(100));
+    }
+    
+    // 3. Soustraire frais de réduction si définis
+    if (fraisReduction != null) {
+        prixCalcule = prixCalcule.subtract(fraisReduction);
+    }
+    
+    // 4. Prix minimum = 0
+    return prixCalcule.max(BigDecimal.ZERO);
+}
+```
 
 ### `DetailReservation.java`
 ```java
@@ -277,8 +315,28 @@ public class CAVolProgramme {
 | Méthode | Signature | Retour | Tables/Vues |
 |---------|-----------|--------|-------------|
 | getAll | `List<TarifCategorie> getAll()` | Liste tarifs | `tarif_categorie` |
-| getPrix | `BigDecimal getPrix(Long idVol, Long idTypePlace, Long idCategorie)` | Prix applicable | `tarif_categorie` |
+| getPrix | `BigDecimal getPrix(Long idVol, Long idTypePlace, Long idCategorie)` | Prix calculé | `tarif_categorie`, `tarif_vol` |
 | getByVol | `List<TarifCategorie> getByVol(Long idVol)` | Tarifs d'un vol | `tarif_categorie` |
+| getTarifAdulte | `BigDecimal getTarifAdulte(Long idVol, Long idTypePlace)` | Tarif adulte de référence | `tarif_categorie`, `tarif_vol` |
+| calculerPrixEffectif | `BigDecimal calculerPrixEffectif(TarifCategorie tarif, BigDecimal tarifAdulte)` | Prix final | Calcul interne |
+
+#### Logique de `getPrix()`
+```java
+public BigDecimal getPrix(Long idVol, Long idTypePlace, Long idCategoriePassager) {
+    // 1. Récupérer le tarif adulte de référence
+    BigDecimal tarifAdulte = getTarifAdulte(idVol, idTypePlace);
+    
+    // 2. Récupérer le tarif catégorie
+    Optional<TarifCategorie> tarifCategorie = getTarifSpecifique(idVol, idTypePlace, idCategoriePassager);
+    
+    if (tarifCategorie.isPresent()) {
+        return tarifCategorie.get().calculerPrixEffectif(tarifAdulte);
+    }
+    
+    // 3. Fallback: utiliser tarif adulte
+    return tarifAdulte;
+}
+```
 
 ### `DetailReservationService.java`
 | Méthode | Signature | Retour | Tables/Vues |
