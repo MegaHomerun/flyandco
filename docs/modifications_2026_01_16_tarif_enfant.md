@@ -4,6 +4,46 @@
 - **Remise enfant** : Pour le vol Tana → Nosy Be, les enfants bénéficient d'un tarif réduit de 500 000 Ar (au lieu de 700 000 Ar) en classe économique.
 - **Calcul du CA** : Permettre de calculer le Chiffre d'Affaires généré par un avion pour un vol programmé donné.
 
+## Architecture des Tarifs
+
+### ⚠️ IMPORTANT: Séparation des responsabilités
+
+**1. Table `tarif_vol` (02_data.sql)**
+- Contient les **tarifs de BASE** pour tous les vols et types de place
+- Ces tarifs s'appliquent par défaut aux adultes
+- **Toujours obligatoire** pour chaque (vol, type_place)
+
+**2. Table `tarif_categorie` (06_tarif_enfant_ca.sql)**
+- Contient **UNIQUEMENT les réductions** ou tarifs spéciaux
+- Ne remplir que pour les cas avec remise (Enfant, Bébé)
+- ❌ **Ne PAS dupliquer** les tarifs adulte (déjà dans tarif_vol)
+
+### Logique de calcul du prix
+
+```
+Si tarif_categorie existe pour (vol, type_place, categorie):
+    Si prix fixe défini → utiliser ce prix
+    Sinon si pourcentage → tarif_adulte × pourcentage / 100
+    Sinon si frais_reduction → soustraire les frais
+Sinon:
+    Utiliser tarif_vol (tarif adulte standard)
+```
+
+### Exemple concret
+
+Pour TNR → Nosy Be, Économique :
+
+| Catégorie | Où mettre ? | Valeur | Résultat |
+|-----------|-------------|--------|----------|
+| Adulte | `tarif_vol` uniquement | 700 000 Ar | 700 000 Ar |
+| Enfant | `tarif_categorie` | prix = 500 000 Ar | 500 000 Ar (remise spéciale) |
+| Bébé | `tarif_categorie` | pourcentage = 10% | 70 000 Ar (10% de 700 000) |
+
+✅ Avantages :
+- Pas de duplication de données
+- Plus simple à maintenir
+- Si pas de réduction → pas d'entrée nécessaire
+
 ---
 
 # PARTIE 1 : AFFICHAGE
@@ -198,20 +238,27 @@ GROUP BY vp.id_vol_programme, vp.id_vol, vp.id_avion, a.modele, a.numero_immatri
 | Enfant | 2 | 11 |
 | Bébé | 0 | 1 |
 
-### Tarifs catégories (Vol TNR → Nosy Be, Économique)
-| Vol | Type place | Catégorie | Prix fixe | Pourcentage | Frais réduction | Prix calculé |
-|-----|------------|-----------|-----------|-------------|-----------------|--------------|
-| TNR → NOS | Économique | Adulte | 700 000 Ar | NULL | NULL | 700 000 Ar |
-| TNR → NOS | Économique | Enfant | 500 000 Ar | NULL | NULL | **500 000 Ar** |
-| TNR → NOS | Économique | Bébé | NULL | 10% | NULL | 70 000 Ar |
-| NOS → TNR | Économique | Adulte | 700 000 Ar | NULL | NULL | 700 000 Ar |
-| NOS → TNR | Économique | Enfant | 500 000 Ar | NULL | NULL | **500 000 Ar** |
-| NOS → TNR | Économique | Bébé | NULL | 10% | NULL | 70 000 Ar |
+### Tarifs de base (dans `tarif_vol` - 02_data.sql)
+| Vol | Type place | Prix (Adulte) |
+|-----|------------|---------------|
+| TNR → NOS | Première classe | 1 200 000 Ar |
+| TNR → NOS | Économique | 700 000 Ar |
+| TNR → NOS | Premium | 1 000 000 Ar |
+
+### Réductions (dans `tarif_categorie` - 06_tarif_enfant_ca.sql)
+| Vol | Type place | Catégorie | Prix fixe | Pourcentage | Prix calculé |
+|-----|------------|-----------|-----------|-------------|--------------|
+| TNR → NOS | Économique | Enfant | 500 000 Ar | NULL | **500 000 Ar** (remise spéciale) |
+| TNR → NOS | Économique | Bébé | NULL | 10% | 70 000 Ar (10% × 700 000) |
+| TNR → NOS | Première classe | Enfant | 900 000 Ar | NULL | 900 000 Ar |
+| TNR → NOS | Première classe | Bébé | NULL | 10% | 120 000 Ar (10% × 1 200 000) |
+
+**Note** : Les tarifs adulte ne sont PAS dans tarif_categorie, ils sont dans tarif_vol.
 
 #### Exemples de calcul
-- **Adulte** : prix = 700 000 Ar (prix fixe)
-- **Enfant** : prix = 500 000 Ar (prix fixe avec remise spéciale)
-- **Bébé** : prix = 700 000 × 10% = 70 000 Ar (pourcentage du tarif adulte)
+- **Adulte** : Pas d'entrée dans tarif_categorie → utilise tarif_vol = 700 000 Ar
+- **Enfant** : Entrée dans tarif_categorie avec prix fixe = 500 000 Ar
+- **Bébé** : Entrée dans tarif_categorie avec pourcentage = 10% → 700 000 × 10% = 70 000 Ar
 
 ### Jeu de données test (réservations avec enfants)
 Voir script `06_tarif_enfant_ca.sql` pour les données complètes.
