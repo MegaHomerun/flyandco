@@ -41,19 +41,38 @@ public class TarifCategorieService {
     }
 
     /**
-     * Calcule le prix pour un passager selon le vol, le type de place et la catégorie
-     * Priorité: tarif_categorie (spécifique) > tarif_vol (standard)
+     * Calcule le prix pour un passager selon le vol, le type de place et la catégorie.
+     * 
+     * Logique:
+     * 1. Récupérer le tarif adulte de référence (tarif_vol)
+     * 2. Chercher un tarif spécifique dans tarif_categorie
+     * 3. Si tarif_categorie existe:
+     *    - Si prix fixe défini → l'utiliser
+     *    - Sinon si pourcentage défini → tarif_adulte * pourcentage / 100
+     *    - Si frais_reduction défini → soustraire les frais
+     * 4. Sinon utiliser le tarif adulte standard
      */
     public BigDecimal getPrix(Long idVol, Long idTypePlace, Long idCategoriePassager) {
-        // D'abord chercher le tarif spécifique par catégorie
-        Optional<BigDecimal> prixCategorie = tarifCategorieRepository.getPrix(
-            idVol, idTypePlace, idCategoriePassager);
+        // Récupérer le tarif adulte de référence
+        BigDecimal tarifAdulte = getTarifAdulte(idVol, idTypePlace);
         
-        if (prixCategorie.isPresent()) {
-            return prixCategorie.get();
+        // Chercher un tarif spécifique par catégorie
+        Optional<TarifCategorie> tarifSpecifique = tarifCategorieRepository
+            .findByVolAndTypePlaceAndCategorie(idVol, idTypePlace, idCategoriePassager);
+        
+        if (tarifSpecifique.isPresent()) {
+            TarifCategorie tc = tarifSpecifique.get();
+            return tc.calculerPrixEffectif(tarifAdulte);
         }
         
-        // Sinon, utiliser le tarif standard (pour adulte par défaut)
+        // Sinon, utiliser le tarif adulte standard
+        return tarifAdulte;
+    }
+    
+    /**
+     * Récupère le tarif adulte de référence pour un vol et type de place
+     */
+    public BigDecimal getTarifAdulte(Long idVol, Long idTypePlace) {
         Optional<TarifVol> tarifVol = tarifVolRepository.findByVolIdVolAndTypePlaceIdTypePlace(idVol, idTypePlace);
         return tarifVol.map(TarifVol::getPrix).orElse(BigDecimal.ZERO);
     }
