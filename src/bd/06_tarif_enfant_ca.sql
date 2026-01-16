@@ -61,81 +61,85 @@ INSERT INTO categorie_passager (nom, description, age_min, age_max) VALUES
 ON CONFLICT (nom) DO NOTHING;
 
 -- ============================================================
--- INSERTION: TARIFS PAR CATÉGORIE POUR VOL TNR -> NOSY BE (Vol 1)
--- Économique Enfant: 500 000 Ar (prix fixe)
--- Bébé: 10% du tarif adulte
+-- INSERTION: TARIFS PAR CATÉGORIE (SEULEMENT LES RÉDUCTIONS)
+-- ⚠️ IMPORTANT: Ne mettre QUE les tarifs différents du tarif adulte standard
+-- Les tarifs adulte sont déjà dans tarif_vol (02_data.sql)
+-- ============================================================
+-- 
+-- ARCHITECTURE:
+-- 1. tarif_vol       → Tarifs de BASE (adulte) pour tous les vols
+-- 2. tarif_categorie → SEULEMENT les réductions (enfant, bébé)
+--
+-- Si pas d'entrée dans tarif_categorie → utilise automatiquement tarif_vol
 -- ============================================================
 
--- Vol 1: TNR -> Nosy Be
+-- Vol 1: TNR -> Nosy Be - SEULEMENT les enfants et bébés
 INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
 -- Première classe
-(1, 1, 1, 1200000, NULL, NULL),  -- Adulte: 1 200 000 Ar (prix fixe)
 (1, 1, 2, 900000, NULL, NULL),   -- Enfant: 900 000 Ar (prix fixe, 25% réduction)
 (1, 1, 3, NULL, 10, NULL),       -- Bébé: 10% du tarif adulte = 120 000 Ar
 -- Économique
-(1, 2, 1, 700000, NULL, NULL),   -- Adulte: 700 000 Ar (prix fixe)
 (1, 2, 2, 500000, NULL, NULL),   -- Enfant: 500 000 Ar (prix fixe, REMISE SPÉCIALE)
 (1, 2, 3, NULL, 10, NULL),       -- Bébé: 10% du tarif adulte = 70 000 Ar
 -- Premium
-(1, 3, 1, 1000000, NULL, NULL),  -- Adulte: 1 000 000 Ar (prix fixe)
 (1, 3, 2, 750000, NULL, NULL),   -- Enfant: 750 000 Ar (prix fixe)
 (1, 3, 3, NULL, 10, NULL)        -- Bébé: 10% du tarif adulte = 100 000 Ar
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
 
--- Vol 2: Nosy Be -> TNR (tarifs identiques pour le retour)
+-- Vol 2: Nosy Be -> TNR - SEULEMENT les enfants et bébés
 INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
-(2, 1, 1, 1200000, NULL, NULL), (2, 1, 2, 900000, NULL, NULL), (2, 1, 3, NULL, 10, NULL),
-(2, 2, 1, 700000, NULL, NULL), (2, 2, 2, 500000, NULL, NULL), (2, 2, 3, NULL, 10, NULL),
-(2, 3, 1, 1000000, NULL, NULL), (2, 3, 2, 750000, NULL, NULL), (2, 3, 3, NULL, 10, NULL)
+(2, 1, 2, 900000, NULL, NULL), (2, 1, 3, NULL, 10, NULL),
+(2, 2, 2, 500000, NULL, NULL), (2, 2, 3, NULL, 10, NULL),
+(2, 3, 2, 750000, NULL, NULL), (2, 3, 3, NULL, 10, NULL)
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
 
--- Vol 3: TNR -> Toamasina
+-- Vol 3: TNR -> Toamasina - SEULEMENT les enfants et bébés
 INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
-(3, 1, 1, 300000, NULL, NULL), (3, 1, 2, 225000, NULL, NULL), (3, 1, 3, NULL, 10, NULL),
-(3, 2, 1, 150000, NULL, NULL), (3, 2, 2, 110000, NULL, NULL), (3, 2, 3, NULL, 10, NULL),
-(3, 3, 1, 200000, NULL, NULL), (3, 3, 2, 150000, NULL, NULL), (3, 3, 3, NULL, 10, NULL)
+(3, 1, 2, 225000, NULL, NULL), (3, 1, 3, NULL, 10, NULL),
+(3, 2, 2, 110000, NULL, NULL), (3, 2, 3, NULL, 10, NULL),
+(3, 3, 2, 150000, NULL, NULL), (3, 3, 3, NULL, 10, NULL)
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
 
--- Vol 4: Toamasina -> TNR
+-- Vol 4: Toamasina -> TNR - SEULEMENT les enfants et bébés
 INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
-(4, 1, 1, 300000, NULL, NULL), (4, 1, 2, 225000, NULL, NULL), (4, 1, 3, NULL, 10, NULL),
-(4, 2, 1, 150000, NULL, NULL), (4, 2, 2, 110000, NULL, NULL), (4, 2, 3, NULL, 10, NULL),
-(4, 3, 1, 200000, NULL, NULL), (4, 3, 2, 150000, NULL, NULL), (4, 3, 3, NULL, 10, NULL)
+(4, 1, 2, 225000, NULL, NULL), (4, 1, 3, NULL, 10, NULL),
+(4, 2, 2, 110000, NULL, NULL), (4, 2, 3, NULL, 10, NULL),
+(4, 3, 2, 150000, NULL, NULL), (4, 3, 3, NULL, 10, NULL)
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
 
--- Vol 5: TNR -> Fort Dauphin
+-- Vol 5: TNR -> Fort Dauphin - SEULEMENT les enfants et bébés
 INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
-(5, 1, 1, 900000, NULL, NULL), (5, 1, 2, 675000, NULL, NULL), (5, 1, 3, NULL, 10, NULL),
-(5, 2, 1, 450000, NULL, NULL), (5, 2, 2, 340000, NULL, NULL), (5, 2, 3, NULL, 10, NULL),
-(5, 3, 1, 650000, NULL, NULL), (5, 3, 2, 490000, NULL, NULL), (5, 3, 3, NULL, 10, NULL)
+(5, 1, 2, 675000, NULL, NULL), (5, 1, 3, NULL, 10, NULL),
+(5, 2, 2, 340000, NULL, NULL), (5, 2, 3, NULL, 10, NULL),
+(5, 3, 2, 490000, NULL, NULL), (5, 3, 3, NULL, 10, NULL)
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
 
--- Vol 6: Fort Dauphin -> TNR
+-- Vol 6: Fort Dauphin -> TNR - SEULEMENT les enfants et bébés
 INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
-(6, 1, 1, 900000, NULL, NULL), (6, 1, 2, 675000, NULL, NULL), (6, 1, 3, NULL, 10, NULL),
-(6, 2, 1, 450000, NULL, NULL), (6, 2, 2, 340000, NULL, NULL), (6, 2, 3, NULL, 10, NULL),
-(6, 3, 1, 650000, NULL, NULL), (6, 3, 2, 490000, NULL, NULL), (6, 3, 3, NULL, 10, NULL)
+(6, 1, 2, 675000, NULL, NULL), (6, 1, 3, NULL, 10, NULL),
+(6, 2, 2, 340000, NULL, NULL), (6, 2, 3, NULL, 10, NULL),
+(6, 3, 2, 490000, NULL, NULL), (6, 3, 3, NULL, 10, NULL)
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
 
--- Vol 7: TNR -> Mahajanga
+-- Vol 7: TNR -> Mahajanga - SEULEMENT les enfants et bébés
 INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
-(7, 1, 1, 560000, NULL, NULL), (7, 1, 2, 420000, NULL, NULL), (7, 1, 3, NULL, 10, NULL),
-(7, 2, 1, 280000, NULL, NULL), (7, 2, 2, 210000, NULL, NULL), (7, 2, 3, NULL, 10, NULL),
-(7, 3, 1, 400000, NULL, NULL), (7, 3, 2, 300000, NULL, NULL), (7, 3, 3, NULL, 10, NULL)
+(7, 1, 2, 420000, NULL, NULL), (7, 1, 3, NULL, 10, NULL),
+(7, 2, 2, 210000, NULL, NULL), (7, 2, 3, NULL, 10, NULL),
+(7, 3, 2, 300000, NULL, NULL), (7, 3, 3, NULL, 10, NULL)
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
 
--- Vol 8: Mahajanga -> TNR
+-- Vol 8: Mahajanga -> TNR - SEULEMENT les enfants et bébés
 INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
-(8, 1, 1, 560000, NULL, NULL), (8, 1, 2, 420000, NULL, NULL), (8, 1, 3, NULL, 10, NULL),
-(8, 2, 1, 280000, NULL, NULL), (8, 2, 2, 210000, NULL, NULL), (8, 2, 3, NULL, 10, NULL),
-(8, 3, 1, 400000, NULL, NULL), (8, 3, 2, 300000, NULL, NULL), (8, 3, 3, NULL, 10, NULL)
+(8, 1, 2, 420000, NULL, NULL), (8, 1, 3, NULL, 10, NULL),
+(8, 2, 2, 210000, NULL, NULL), (8, 2, 3, NULL, 10, NULL),
+(8, 3, 2, 300000, NULL, NULL), (8, 3, 3, NULL, 10, NULL)
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
 
