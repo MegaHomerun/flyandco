@@ -369,3 +369,51 @@ INSERT INTO siege (id_vol, numero, classe) VALUES
 (1,'58A','ECONOMY'), (1,'58B','ECONOMY'),
 (1,'59A','ECONOMY'), (1,'59B','ECONOMY'),
 (1,'60A','ECONOMY'), (1,'60B','ECONOMY');
+
+-- =========================
+-- PASSAGERS (ADULTES ET ENFANTS)
+-- =========================
+INSERT INTO passager (nom, prenom, date_naissance, email, type_passager)
+VALUES
+('Rakoto', 'Jean', '1985-03-15', 'jean.rakoto@email.com', 'ADULTE'),
+('Rabe', 'Marie', '1990-07-22', 'marie.rabe@email.com', 'ADULTE'),
+('Randria', 'Paul', '1978-11-08', 'paul.randria@email.com', 'ADULTE'),
+('Rasoa', 'Hery', '2015-05-10', 'hery.rasoa@email.com', 'ENFANT'),
+('Rasolofo', 'Tiana', '2018-09-25', 'tiana.rasolofo@email.com', 'ENFANT'),
+('Andria', 'Faly', '1982-01-30', 'faly.andria@email.com', 'ADULTE'),
+('Razafy', 'Noro', '1995-12-05', 'noro.razafy@email.com', 'ADULTE'),
+('Raharison', 'Lova', '2016-04-18', 'lova.raharison@email.com', 'ENFANT'),
+('Ramanantsoa', 'Aina', '1988-08-12', 'aina.ramanantsoa@email.com', 'ADULTE'),
+('Ratsimba', 'Koto', '2017-02-28', 'koto.ratsimba@email.com', 'ENFANT');
+
+-- =========================
+-- RESERVATIONS (POUR VOL 1 - VOL_INSTANCE 1)
+-- =========================
+-- Réservations ADULTE en ECONOMY (id_prix = 1)
+INSERT INTO reservation (id_passager, id_vol_instance, id_prix, siege, statut)
+VALUES
+(1, 1, 1, '36A', 'CONFIRMEE'),
+(2, 1, 1, '36B', 'CONFIRMEE'),
+(3, 1, 1, '37A', 'CONFIRMEE'),
+(6, 1, 1, '37B', 'CONFIRMEE'),
+(7, 1, 1, '38A', 'CONFIRMEE'),
+(9, 1, 1, '38B', 'CONFIRMEE');
+
+-- Réservations ENFANT en ECONOMY (id_prix = 4 pour ECONOMY ENFANT)
+INSERT INTO reservation (id_passager, id_vol_instance, id_prix, siege, statut)
+VALUES
+(4, 1, 4, '39A', 'CONFIRMEE'),
+(5, 1, 4, '39B', 'CONFIRMEE'),
+(8, 1, 4, '40A', 'CONFIRMEE'),
+(10, 1, 4, '40B', 'CONFIRMEE');
+
+-- Réservations ADULTE en FIRST (id_prix = 2)
+INSERT INTO reservation (id_passager, id_vol_instance, id_prix, siege, statut)
+VALUES
+(1, 2, 5, '1A', 'CONFIRMEE'),
+(2, 2, 5, '1B', 'CONFIRMEE');
+
+-- Réservations ADULTE en PREMIUM (id_prix = 3)
+INSERT INTO reservation (id_passager, id_vol_instance, id_prix, siege, statut)
+VALUES
+(3, 2, 6, '16A', 'CONFIRMEE');

@@ -1,19 +1,19 @@
 package com.fly.andco.controller.avions;
 
-import com.fly.andco.model.avions.Avion;
-import com.fly.andco.dto.RevenueDetail;
-import com.fly.andco.service.avions.AvionService;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-
-import java.util.List;
+import com.fly.andco.dto.RealRevenueDetail;
+import com.fly.andco.dto.RevenueDetail;
+import com.fly.andco.model.avions.Avion;
+import com.fly.andco.service.avions.AvionService;
 
 @Controller
 @RequestMapping("/avions")
@@ -45,16 +45,34 @@ public class AvionController {
 
     @PostMapping("/revenue")
     public String calculateRevenue(@RequestParam("idVol") Long idVol,
-                                   Model model) {
-        List<RevenueDetail> details = siegeService.calculateMaxRevenue(idVol);
-        
-        double grandTotal = details.stream().mapToDouble(RevenueDetail::getTotal).sum();
+            @RequestParam(value = "typeCalcul", defaultValue = "max") String typeCalcul,
+            Model model) {
 
-        model.addAttribute("revenueDetails", details);
-        model.addAttribute("grandTotal", grandTotal);
-        // model.addAttribute("avions", avionService.getAllAvions()); // Removed as per refactor plan
+        if ("real".equals(typeCalcul)) {
+            // Calcul du prix réel basé sur les réservations
+            List<RealRevenueDetail> realDetails = siegeService.calculateRealRevenue(idVol);
+
+            double grandTotalReal = realDetails.stream().mapToDouble(RealRevenueDetail::getTotal).sum();
+            long totalPlacesOccupees = realDetails.stream().mapToLong(RealRevenueDetail::getPlacesOccupees).sum();
+
+            model.addAttribute("realRevenueDetails", realDetails);
+            model.addAttribute("grandTotalReal", grandTotalReal);
+            model.addAttribute("totalPlacesOccupees", totalPlacesOccupees);
+            model.addAttribute("typeCalcul", "real");
+        } else {
+            // Calcul du prix maximal
+            List<RevenueDetail> details = siegeService.calculateMaxRevenue(idVol);
+
+            double grandTotal = details.stream().mapToDouble(RevenueDetail::getTotalAdulte).sum();
+            long totalPlaces = details.stream().mapToLong(RevenueDetail::getNombreSieges).sum();
+
+            model.addAttribute("revenueDetails", details);
+            model.addAttribute("grandTotal", grandTotal);
+            model.addAttribute("totalPlaces", totalPlaces);
+            model.addAttribute("typeCalcul", "max");
+        }
+
         model.addAttribute("vols", volService.getAll());
-        // model.addAttribute("selectedAvionId", idAvion); // Removed
         model.addAttribute("selectedVolId", idVol);
         return "views/avions/place";
     }

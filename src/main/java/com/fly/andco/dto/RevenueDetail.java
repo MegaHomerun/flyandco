@@ -1,23 +1,28 @@
 package com.fly.andco.dto;
 
-import java.util.Map;
-
 public class RevenueDetail {
     private String classe;
-    private double prixUnitaire;
+    private double prixAdulte;
+    private double prixEnfant;
     private long nombreSieges;
-    private double total;
+    private double totalAdulte;
+    private double totalEnfant;
 
-    // Constructors, Getters, Setters
-    public RevenueDetail(String classe, double prixUnitaire, long nombreSieges, double total) {
+    public RevenueDetail(String classe, double prixAdulte, double prixEnfant, long nombreSieges) {
         this.classe = classe;
-        this.prixUnitaire = prixUnitaire;
+        this.prixAdulte = prixAdulte;
+        this.prixEnfant = prixEnfant;
         this.nombreSieges = nombreSieges;
-        this.total = total;
+        this.totalAdulte = nombreSieges * prixAdulte;
+        this.totalEnfant = nombreSieges * prixEnfant;
     }
     
     public String getClasse() { return classe; }
-    public double getPrixUnitaire() { return prixUnitaire; }
+    public double getPrixAdulte() { return prixAdulte; }
+    public double getPrixEnfant() { return prixEnfant; }
     public long getNombreSieges() { return nombreSieges; }
-    public double getTotal() { return total; }
+    public double getTotalAdulte() { return totalAdulte; }
+    public double getTotalEnfant() { return totalEnfant; }
+    public double getTotal() { return totalAdulte; } // Pour compatibilité
+    public double getPrixUnitaire() { return prixAdulte; } // Pour compatibilité
 }

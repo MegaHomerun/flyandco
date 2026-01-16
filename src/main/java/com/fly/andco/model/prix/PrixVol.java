@@ -1,14 +1,22 @@
 package com.fly.andco.model.prix;
 
-import com.fly.andco.model.vols.Vol;
-import com.fly.andco.model.compagnies.Compagnie;
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
+
+import com.fly.andco.model.vols.Vol;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "prix_vol",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"id_vol", "classe"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"id_vol", "classe", "type_passager"}))
 public class PrixVol {
 
     @Id
@@ -20,10 +28,14 @@ public class PrixVol {
     private Vol vol;
 
     private String classe;
+
+    @Column(name = "type_passager")
+    private String typePassager; // "ADULTE" ou "ENFANT"
+
     private Double prix;
     private LocalDateTime dateMaj;
 
-    // getters & setters
+// getters & setters
     public Long getIdPrix() {
         return idPrix;
     }
@@ -46,6 +58,14 @@ public class PrixVol {
 
     public void setClasse(String classe) {
         this.classe = classe;
+    }
+
+    public String getTypePassager() {
+        return typePassager;
+    }
+
+    public void setTypePassager(String typePassager) {
+        this.typePassager = typePassager;
     }
 
     public Double getPrix() {

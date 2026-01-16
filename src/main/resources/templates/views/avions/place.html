@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataTable - Mazer Admin Dashboard</title>
+    <title>Calcul Recette - Fly & Co</title>
 
     <!-- Favicon -->
     <link rel="shortcut icon" th:href="@{/assets/compiled/svg/favicon.svg}" type="image/x-icon">
@@ -35,8 +35,8 @@
                 <div class="page-title">
                     <div class="row">
                         <div class="col-12 col-md-6 order-md-1 order-last">
-                            <h3>Avion</h3>
-                            <p class="text-subtitle text-muted">Vous pouvez voir vos communes</p>
+                            <h3>Avion - Calcul Recette</h3>
+                            <p class="text-subtitle text-muted">Calculez le prix maximal ou réel d'un vol</p>
                         </div>
                         <div class="col-12 col-md-6 order-md-2 order-first">
                             <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
@@ -57,13 +57,13 @@
                                     <div class="col-12">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h4 class="card-title">Calcul Recette Max</h4>
+                                                <h4 class="card-title">Calcul Recette</h4>
                                             </div>
                                             <div class="card-content">
                                                 <div class="card-body">
                                                     <form class="form" th:action="@{/avions/revenue}" method="post">
                                                         <div class="row">
-                                                            <div class="col-12">
+                                                            <div class="col-md-6">
                                                                 <div class="form-group">
                                                                     <label for="vol-column">Vol</label>
                                                                     <select id="vol-column" class="form-select"
@@ -76,6 +76,16 @@
                                                                     </select>
                                                                 </div>
                                                             </div>
+                                                            <div class="col-md-6">
+                                                                <div class="form-group">
+                                                                    <label for="type-calcul">Type de Calcul</label>
+                                                                    <select id="type-calcul" class="form-select"
+                                                                        name="typeCalcul">
+                                                                        <option value="max" th:selected="${typeCalcul == null || typeCalcul == 'max'}">Prix Maximal</option>
+                                                                        <option value="real" th:selected="${typeCalcul == 'real'}">Prix Réel (Réservations)</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
 
                                                             <div class="col-12 d-flex justify-content-end mt-3">
                                                                 <button type="submit"
@@ -84,40 +94,90 @@
                                                         </div>
                                                     </form>
 
-                                                    <div th:if="${revenueDetails != null}" class="mt-4">
-                                                        <h5 class="card-title">Details Recette</h5>
+                                                    <!-- Affichage Prix Maximal -->
+                                                    <div th:if="${revenueDetails != null && typeCalcul == 'max'}" class="mt-4">
+                                                        <h5 class="card-title">Prix Maximal - Par Type de Passager</h5>
                                                         <div class="table-responsive">
                                                             <table class="table table-striped mb-0">
                                                                 <thead>
                                                                     <tr>
                                                                         <th>Classe</th>
-                                                                        <th>Prix Unitaire</th>
-                                                                        <th>Nombre de Sieges</th>
-                                                                        <th>Total</th>
+                                                                        <th>Prix Adulte</th>
+                                                                        <th>Prix Enfant</th>
+                                                                        <th>Nombre de Sièges</th>
+                                                                        <th>Total (Max)</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
                                                                     <tr th:each="detail : ${revenueDetails}">
                                                                         <td th:text="${detail.classe}"></td>
-                                                                        <td
-                                                                            th:text="${#numbers.formatDecimal(detail.prixUnitaire, 0, 'COMMA', 0, 'POINT')} + ' Ar'">
-                                                                        </td>
+                                                                        <td th:text="${detail.prixAdulte > 0 ? #numbers.formatDecimal(detail.prixAdulte, 0, 'COMMA', 0, 'POINT') + ' Ar' : 'N/A'}"></td>
+                                                                        <td th:text="${detail.prixEnfant > 0 ? #numbers.formatDecimal(detail.prixEnfant, 0, 'COMMA', 0, 'POINT') + ' Ar' : 'N/A'}"></td>
                                                                         <td th:text="${detail.nombreSieges}"></td>
-                                                                        <td
-                                                                            th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' Ar'">
-                                                                        </td>
+                                                                        <td th:text="${#numbers.formatDecimal(detail.totalAdulte, 0, 'COMMA', 0, 'POINT')} + ' Ar'"></td>
                                                                     </tr>
                                                                 </tbody>
                                                                 <tfoot>
                                                                     <tr>
-                                                                        <th colspan="3" class="text-end">Grand Total
-                                                                        </th>
-                                                                        <th
-                                                                            th:text="${#numbers.formatDecimal(grandTotal, 0, 'COMMA', 0, 'POINT')} + ' Ar'">
-                                                                        </th>
+                                                                        <th colspan="3" class="text-end">Total Places</th>
+                                                                        <th th:text="${totalPlaces}"></th>
+                                                                        <th></th>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th colspan="4" class="text-end">Grand Total</th>
+                                                                        <th th:text="${#numbers.formatDecimal(grandTotal, 0, 'COMMA', 0, 'POINT')} + ' Ar'"></th>
                                                                     </tr>
                                                                 </tfoot>
                                                             </table>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Affichage Prix Réel -->
+                                                    <div th:if="${realRevenueDetails != null && typeCalcul == 'real'}" class="mt-4">
+                                                        <h5 class="card-title">Prix Réel - Basé sur les Réservations</h5>
+                                                        <div class="table-responsive">
+                                                            <table class="table table-striped mb-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Classe</th>
+                                                                        <th>Type Passager</th>
+                                                                        <th>Prix Unitaire</th>
+                                                                        <th>Places Occupées</th>
+                                                                        <th>Total</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <tr th:each="detail : ${realRevenueDetails}">
+                                                                        <td th:text="${detail.classe}"></td>
+                                                                        <td>
+                                                                            <span th:if="${detail.typePassager == 'ADULTE'}" class="badge bg-primary">Adulte</span>
+                                                                            <span th:if="${detail.typePassager == 'ENFANT'}" class="badge bg-info">Enfant</span>
+                                                                            <span th:if="${detail.typePassager != 'ADULTE' && detail.typePassager != 'ENFANT'}" th:text="${detail.typePassager}"></span>
+                                                                        </td>
+                                                                        <td th:text="${#numbers.formatDecimal(detail.prixUnitaire, 0, 'COMMA', 0, 'POINT')} + ' Ar'"></td>
+                                                                        <td th:text="${detail.placesOccupees}"></td>
+                                                                        <td th:text="${#numbers.formatDecimal(detail.total, 0, 'COMMA', 0, 'POINT')} + ' Ar'"></td>
+                                                                    </tr>
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr>
+                                                                        <th colspan="3" class="text-end">Total Places Occupées</th>
+                                                                        <th th:text="${totalPlacesOccupees}"></th>
+                                                                        <th></th>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <th colspan="4" class="text-end">Grand Total Réel</th>
+                                                                        <th th:text="${#numbers.formatDecimal(grandTotalReal, 0, 'COMMA', 0, 'POINT')} + ' Ar'"></th>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Message si aucune réservation -->
+                                                    <div th:if="${realRevenueDetails != null && #lists.isEmpty(realRevenueDetails) && typeCalcul == 'real'}" class="mt-4">
+                                                        <div class="alert alert-info">
+                                                            <i class="bi bi-info-circle"></i> Aucune réservation trouvée pour ce vol.
                                                         </div>
                                                     </div>
 
