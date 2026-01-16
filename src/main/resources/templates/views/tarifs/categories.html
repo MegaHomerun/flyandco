@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarifs par Catégorie de Passager - FlyAndCo</title>
+    
+    <link rel="shortcut icon" href="./assets/compiled/svg/favicon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="/assets/extensions/simple-datatables/style.css">
+    <link rel="stylesheet" href="/assets/compiled/css/table-datatable.css">
+    <link rel="stylesheet" href="/assets/compiled/css/app.css">
+    <link rel="stylesheet" href="/assets/compiled/css/app-dark.css">
+</head>
+
+<body>
+    <script src="/assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div th:replace="fragments/sidebar :: sidebar"></div>
+
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            
+            <div class="page-heading">
+                <div class="page-title">
+                    <div class="row">
+                        <div class="col-12 col-md-6 order-md-1 order-last">
+                            <h3>Tarifs par Catégorie de Passager</h3>
+                            <p class="text-subtitle text-muted">Gestion des remises pour enfants, bébés et autres catégories</p>
+                        </div>
+                        <div class="col-12 col-md-6 order-md-2 order-first">
+                            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/home">Accueil</a></li>
+                                    <li class="breadcrumb-item"><a href="#">Administration</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">Tarifs Catégories</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alertes -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${success}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Info box sur les modes de tarification -->
+                <section class="section">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> Modes de tarification</h6>
+                        <ul class="mb-0">
+                            <li><strong>Prix fixe</strong> : Montant fixe en Ariary (ex: 500 000 Ar)</li>
+                            <li><strong>Pourcentage</strong> : % du tarif adulte (ex: 10% pour bébé = 70 000 Ar si adulte = 700 000 Ar)</li>
+                            <li><strong>Frais de réduction</strong> : Montant à soustraire du tarif calculé (optionnel)</li>
+                        </ul>
+                        <small class="text-muted">Priorité: Prix fixe > Pourcentage > Tarif adulte par défaut</small>
+                    </div>
+                </section>
+
+                <!-- Formulaire d'ajout/modification -->
+                <section class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="bi bi-plus-circle"></i> Ajouter / Modifier un tarif catégorie
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form th:action="@{/admin/tarifs/categories/save}" method="post">
+                                <input type="hidden" id="idTarifCategorie" name="idTarifCategorie">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="idVol">Vol (Route)</label>
+                                            <select class="form-select" id="idVol" name="idVol" required>
+                                                <option value="">-- Sélectionner un vol --</option>
+                                                <option th:each="vol : ${vols}" 
+                                                        th:value="${vol.idVol}"
+                                                        th:text="${vol.aeroportDepart.codeIata + ' → ' + vol.aeroportArrivee.codeIata + ' (' + vol.aeroportDepart.ville + ' - ' + vol.aeroportArrivee.ville + ')'}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="idTypePlace">Type de Place</label>
+                                            <select class="form-select" id="idTypePlace" name="idTypePlace" required>
+                                                <option value="">-- Sélectionner un type --</option>
+                                                <option th:each="tp : ${typesPlaces}" 
+                                                        th:value="${tp.idTypePlace}"
+                                                        th:text="${tp.nom}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="idCategoriePassager">Catégorie Passager</label>
+                                            <select class="form-select" id="idCategoriePassager" name="idCategoriePassager" required>
+                                                <option value="">-- Sélectionner une catégorie --</option>
+                                                <option th:each="cat : ${categories}" 
+                                                        th:value="${cat.idCategoriePassager}"
+                                                        th:text="${cat.nom + ' (' + cat.ageMin + '-' + cat.ageMax + ' ans)'}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="prix">Prix Fixe (Ar) <small class="text-muted">- optionnel</small></label>
+                                            <input type="number" class="form-control" id="prix" name="prix" 
+                                                   step="0.01" min="0" placeholder="Ex: 500000">
+                                            <small class="text-muted">Si défini, ce prix sera utilisé directement</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="pourcentage">Pourcentage (%) <small class="text-muted">- optionnel</small></label>
+                                            <input type="number" class="form-control" id="pourcentage" name="pourcentage" 
+                                                   step="0.01" min="0" max="100" placeholder="Ex: 10">
+                                            <small class="text-muted">% du tarif adulte (ex: 10 = 10%)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="fraisReduction">Frais de Réduction (Ar) <small class="text-muted">- optionnel</small></label>
+                                            <input type="number" class="form-control" id="fraisReduction" name="fraisReduction" 
+                                                   step="0.01" min="0" placeholder="Ex: 200000">
+                                            <small class="text-muted">Montant à soustraire du prix</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Enregistrer
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                                            <i class="bi bi-x-circle"></i> Annuler
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Liste des tarifs catégories -->
+                <section class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                <i class="bi bi-list-ul"></i> Liste des tarifs par catégorie de passager
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-striped" id="table1">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Vol</th>
+                                        <th>Type Place</th>
+                                        <th>Catégorie</th>
+                                        <th>Prix Fixe</th>
+                                        <th>Pourcentage</th>
+                                        <th>Frais Réduction</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="tarif : ${tarifsCategorie}">
+                                        <td th:text="${tarif.idTarifCategorie}"></td>
+                                        <td>
+                                            <span th:text="${tarif.vol.aeroportDepart.codeIata + ' → ' + tarif.vol.aeroportArrivee.codeIata}"></span>
+                                        </td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${tarif.typePlace.nom == 'Business' ? 'bg-warning' : (tarif.typePlace.nom == 'Premium' ? 'bg-info' : 'bg-secondary')}"
+                                                  th:text="${tarif.typePlace.nom}"></span>
+                                        </td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${tarif.categoriePassager.nom == 'Enfant' ? 'bg-success' : (tarif.categoriePassager.nom == 'Bébé' ? 'bg-primary' : 'bg-dark')}"
+                                                  th:text="${tarif.categoriePassager.nom}"></span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${tarif.prix != null}" th:text="${#numbers.formatDecimal(tarif.prix, 0, 'COMMA', 0, 'POINT') + ' Ar'}"></span>
+                                            <span th:if="${tarif.prix == null}" class="text-muted">-</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${tarif.pourcentage != null}" th:text="${tarif.pourcentage + '%'}"></span>
+                                            <span th:if="${tarif.pourcentage == null}" class="text-muted">-</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${tarif.fraisReduction != null}" th:text="${'-' + #numbers.formatDecimal(tarif.fraisReduction, 0, 'COMMA', 0, 'POINT') + ' Ar'}"></span>
+                                            <span th:if="${tarif.fraisReduction == null}" class="text-muted">-</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    th:data-id="${tarif.idTarifCategorie}"
+                                                    th:data-vol="${tarif.vol.idVol}"
+                                                    th:data-typeplace="${tarif.typePlace.idTypePlace}"
+                                                    th:data-categorie="${tarif.categoriePassager.idCategoriePassager}"
+                                                    th:data-prix="${tarif.prix}"
+                                                    th:data-pourcentage="${tarif.pourcentage}"
+                                                    th:data-frais="${tarif.fraisReduction}"
+                                                    onclick="editTarifCategorie(this)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <a th:href="@{/admin/tarifs/categories/delete/{id}(id=${tarif.idTarifCategorie})}" 
+                                               class="btn btn-sm btn-outline-danger"
+                                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce tarif catégorie ?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Navigation vers autres tarifs -->
+                <section class="section">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Tarifs par type de place</h6>
+                                    <small class="text-muted">Gérer les tarifs de base par vol et type de place</small>
+                                </div>
+                                <a href="/admin/tarifs/types-places" class="btn btn-primary">
+                                    <i class="bi bi-ticket-perforated"></i> Gérer les tarifs types places
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <footer>
+                <div class="footer clearfix mb-0 text-muted">
+                    <div class="float-start">
+                        <p>2026 &copy; FlyAndCo</p>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="/assets/static/js/components/dark.js"></script>
+    <script src="/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="/assets/compiled/js/app.js"></script>
+    <script src="/assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
+    <script src="/assets/static/js/pages/simple-datatables.js"></script>
+    
+    <script>
+        function editTarifCategorie(btn) {
+            document.getElementById('idTarifCategorie').value = btn.dataset.id;
+            document.getElementById('idVol').value = btn.dataset.vol;
+            document.getElementById('idTypePlace').value = btn.dataset.typeplace;
+            document.getElementById('idCategoriePassager').value = btn.dataset.categorie;
+            document.getElementById('prix').value = btn.dataset.prix !== 'null' ? btn.dataset.prix : '';
+            document.getElementById('pourcentage').value = btn.dataset.pourcentage !== 'null' ? btn.dataset.pourcentage : '';
+            document.getElementById('fraisReduction').value = btn.dataset.frais !== 'null' ? btn.dataset.frais : '';
+            
+            // Scroll vers le formulaire
+            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function resetForm() {
+            document.getElementById('idTarifCategorie').value = '';
+            document.getElementById('idVol').value = '';
+            document.getElementById('idTypePlace').value = '';
+            document.getElementById('idCategoriePassager').value = '';
+            document.getElementById('prix').value = '';
+            document.getElementById('pourcentage').value = '';
+            document.getElementById('fraisReduction').value = '';
+        }
+    </script>
+</body>
+
+</html>
