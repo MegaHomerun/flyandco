@@ -17,4 +17,4 @@ Donner la valeur maximale qu'un avion peut générer pour un vol
 
 16/01/2026
 Pour le vol Tana - Nosy Be, La compagnie a donné une remise pour les enfants qui ont des places économiques, par conséquent le prix pour enfant est de 500 000Ar au lieu de 700 000Ar Calculer le CA généré par l'avion pour un vol Tana Nosy Be (jeu de données libres avec
-enfant
+enfant)
