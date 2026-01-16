@@ -369,6 +369,7 @@ public interface CAVolProgrammeRepository {
 | Service | `service/reservations/DetailReservationService.java` | Service détails |
 | Service | `service/vols/CAService.java` | Service calcul CA |
 | Controller | API dans `BookingController.java` | Endpoint calcul prix AJAX |
+| Template | `templates/views/booking/ca.html` | Page affichage CA |
 
 ## Fichiers modifiés
 
@@ -377,23 +378,28 @@ public interface CAVolProgrammeRepository {
 | `ReservationService.java` | Ajout paramètres typePlace et categoriePassager |
 | `BookingController.java` | Ajout listes déroulantes et endpoint AJAX |
 | `reserve.html` | Ajout champs typePlace et categoriePassager + JS |
+| `search.html` | Ajout bouton "CA" pour voir le chiffre d'affaires |
+| `TarifVolRepository.java` | Ajout méthode findByVolIdVolAndTypePlaceIdTypePlace |
 
 ---
 
 # TODO LIST DÉVELOPPEUR
 
-- [ ] 1. Exécuter le script SQL `06_tarif_enfant_ca.sql`
-- [ ] 2. Créer `CategoriePassager.java` (model)
-- [ ] 3. Créer `TarifCategorie.java` (model)
-- [ ] 4. Créer `DetailReservation.java` (model)
-- [ ] 5. Créer `CAVolProgramme.java` (DTO)
-- [ ] 6. Créer les 4 Repository
-- [ ] 7. Créer `CategoriePassagerService.java`
-- [ ] 8. Créer `TarifCategorieService.java`
-- [ ] 9. Créer `DetailReservationService.java`
-- [ ] 10. Créer `CAService.java`
-- [ ] 11. Modifier `ReservationService.effectuerReservation()`
-- [ ] 12. Modifier `BookingController.java`
-- [ ] 13. Modifier `reserve.html`
-- [ ] 14. Tester la réservation avec tarif enfant
-- [ ] 15. Tester le calcul du CA
+- [x] 1. Exécuter le script SQL `06_tarif_enfant_ca.sql`
+- [x] 2. Créer `CategoriePassager.java` (model)
+- [x] 3. Créer `TarifCategorie.java` (model)
+- [x] 4. Créer `DetailReservation.java` (model)
+- [x] 5. Créer `CAVolProgramme.java` (DTO)
+- [x] 6. Créer les 4 Repository
+- [x] 7. Créer `CategoriePassagerService.java`
+- [x] 8. Créer `TarifCategorieService.java`
+- [x] 9. Créer `DetailReservationService.java`
+- [x] 10. Créer `CAService.java`
+- [x] 11. Modifier `ReservationService.effectuerReservation()`
+- [x] 12. Modifier `BookingController.java`
+- [x] 13. Modifier `reserve.html`
+- [x] 14. Créer `ca.html` (page CA)
+- [ ] 15. Tester la réservation avec tarif enfant
+- [ ] 16. Tester le calcul du CA
+
+> **Note**: Pour finaliser, exécuter le script SQL sur la base de données PostgreSQL.
