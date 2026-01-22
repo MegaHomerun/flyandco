@@ -18,3 +18,10 @@ Donner la valeur maximale qu'un avion peut générer pour un vol
 16/01/2026
 Pour le vol Tana - Nosy Be, La compagnie a donné une remise pour les enfants qui ont des places économiques, par conséquent le prix pour enfant est de 500 000Ar au lieu de 700 000Ar Calculer le CA généré par l'avion pour un vol Tana Nosy Be (jeu de données libres avec
 enfant)
+
+22/01/2026
+Des sociétés peuvent diffuser des vidéos publicitaires sur les ecrans de l'avion, et la diffusion des pubs est payante
+Le cout est de 400 000Ar/ diffusion
+La société Vaniala a fait 20 diffusions pour le mois de décembre 2025
+La société Lewis a fait 10 diffusions pour le mois de décembre
+Combien s'élève le montant du CA en décembre 2025 relatif aux diffusions des vidéos publicitaires?
