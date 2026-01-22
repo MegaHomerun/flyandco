@@ -5,6 +5,13 @@
 --              un nouvel avion et configuration tarifaire
 -- ============================================================
 
+-- ============================================================
+-- NOTE DE REFACTO:
+-- Les tables et données de base sont maintenant centralisées dans
+-- 01_table.sql (DDL) et 02_data.sql (DML). Ce script est conservé
+-- pour historique et n'est plus nécessaire dans le flux principal.
+-- ============================================================
+
 \c pg10;
 
 -- ============================================================

@@ -91,6 +91,15 @@ INSERT INTO type_place (nom, description) VALUES
 ('Premium', 'Sièges confortables avec services améliorés');
 
 -- ============================================================
+-- INSERTION: CATÉGORIES DE PASSAGERS
+-- ============================================================
+INSERT INTO categorie_passager (nom, description, age_min, age_max) VALUES
+('Adulte', 'Passager de 12 ans et plus', 12, 999),
+('Enfant', 'Passager de 2 à 11 ans', 2, 11),
+('Bébé', 'Passager de moins de 2 ans (sur genoux)', 0, 1)
+ON CONFLICT (nom) DO NOTHING;
+
+-- ============================================================
 -- INSERTION: CONFIGURATION DES PLACES PAR AVION
 -- ============================================================
 
@@ -176,3 +185,85 @@ INSERT INTO tarif_vol (id_vol, id_type_place, prix) VALUES
 (8, 1, 560000),   -- Première classe: 560 000 Ar
 (8, 2, 280000),   -- Économique: 280 000 Ar
 (8, 3, 400000);   -- Premium: 400 000 Ar
+
+-- ============================================================
+-- INSERTION: TARIFS PAR CATÉGORIE (SEULEMENT LES RÉDUCTIONS)
+-- ⚠️ IMPORTANT: Ne mettre QUE les tarifs différents du tarif adulte standard
+-- Les tarifs adulte sont déjà dans tarif_vol
+-- ============================================================
+-- ARCHITECTURE:
+-- 1. tarif_vol       → Tarifs de BASE (adulte) pour tous les vols
+-- 2. tarif_categorie → SEULEMENT les réductions (enfant, bébé)
+--
+-- Si pas d'entrée dans tarif_categorie → utilise automatiquement tarif_vol
+-- ============================================================
+
+-- Vol 1: TNR -> Nosy Be - SEULEMENT les enfants et bébés
+INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
+-- Première classe
+(1, 1, 2, 900000, NULL, NULL),   -- Enfant: 900 000 Ar (prix fixe, 25% réduction)
+(1, 1, 3, NULL, 10, NULL),       -- Bébé: 10% du tarif adulte = 120 000 Ar
+-- Économique
+(1, 2, 2, 500000, NULL, NULL),   -- Enfant: 500 000 Ar (prix fixe, REMISE SPÉCIALE)
+(1, 2, 3, NULL, 10, NULL),       -- Bébé: 10% du tarif adulte = 70 000 Ar
+-- Premium
+(1, 3, 2, 750000, NULL, NULL),   -- Enfant: 750 000 Ar (prix fixe)
+(1, 3, 3, NULL, 10, NULL)        -- Bébé: 10% du tarif adulte = 100 000 Ar
+ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
+DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
+
+-- Vol 2: Nosy Be -> TNR - SEULEMENT les enfants et bébés
+INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
+(2, 1, 2, 900000, NULL, NULL), (2, 1, 3, NULL, 10, NULL),
+(2, 2, 2, 500000, NULL, NULL), (2, 2, 3, NULL, 10, NULL),
+(2, 3, 2, 750000, NULL, NULL), (2, 3, 3, NULL, 10, NULL)
+ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
+DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
+
+-- Vol 3: TNR -> Toamasina - SEULEMENT les enfants et bébés
+INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
+(3, 1, 2, 225000, NULL, NULL), (3, 1, 3, NULL, 10, NULL),
+(3, 2, 2, 110000, NULL, NULL), (3, 2, 3, NULL, 10, NULL),
+(3, 3, 2, 150000, NULL, NULL), (3, 3, 3, NULL, 10, NULL)
+ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
+DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
+
+-- Vol 4: Toamasina -> TNR - SEULEMENT les enfants et bébés
+INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
+(4, 1, 2, 225000, NULL, NULL), (4, 1, 3, NULL, 10, NULL),
+(4, 2, 2, 110000, NULL, NULL), (4, 2, 3, NULL, 10, NULL),
+(4, 3, 2, 150000, NULL, NULL), (4, 3, 3, NULL, 10, NULL)
+ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
+DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
+
+-- Vol 5: TNR -> Fort Dauphin - SEULEMENT les enfants et bébés
+INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
+(5, 1, 2, 675000, NULL, NULL), (5, 1, 3, NULL, 10, NULL),
+(5, 2, 2, 340000, NULL, NULL), (5, 2, 3, NULL, 10, NULL),
+(5, 3, 2, 490000, NULL, NULL), (5, 3, 3, NULL, 10, NULL)
+ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
+DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
+
+-- Vol 6: Fort Dauphin -> TNR - SEULEMENT les enfants et bébés
+INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
+(6, 1, 2, 675000, NULL, NULL), (6, 1, 3, NULL, 10, NULL),
+(6, 2, 2, 340000, NULL, NULL), (6, 2, 3, NULL, 10, NULL),
+(6, 3, 2, 490000, NULL, NULL), (6, 3, 3, NULL, 10, NULL)
+ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
+DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
+
+-- Vol 7: TNR -> Mahajanga - SEULEMENT les enfants et bébés
+INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
+(7, 1, 2, 420000, NULL, NULL), (7, 1, 3, NULL, 10, NULL),
+(7, 2, 2, 210000, NULL, NULL), (7, 2, 3, NULL, 10, NULL),
+(7, 3, 2, 300000, NULL, NULL), (7, 3, 3, NULL, 10, NULL)
+ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
+DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
+
+-- Vol 8: Mahajanga -> TNR - SEULEMENT les enfants et bébés
+INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix, pourcentage, frais_reduction) VALUES
+(8, 1, 2, 420000, NULL, NULL), (8, 1, 3, NULL, 10, NULL),
+(8, 2, 2, 210000, NULL, NULL), (8, 2, 3, NULL, 10, NULL),
+(8, 3, 2, 300000, NULL, NULL), (8, 3, 3, NULL, 10, NULL)
+ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
+DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
