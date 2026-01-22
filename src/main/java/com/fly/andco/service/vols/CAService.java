@@ -71,6 +71,59 @@ public class CAService {
     }
 
     /**
+     * Recalcule le CA avec les tarifs actuels de la base de données
+     * (sans sauvegarder, juste pour simulation)
+     */
+    public List<CAVolProgramme> getCARecalculeAvecTarifsActuels(Long idVolProgramme) {
+        String sql = """
+            SELECT 
+                vp.id_vol_programme,
+                vp.id_vol,
+                vp.id_avion,
+                a.modele AS avion_modele,
+                a.numero_immatriculation,
+                ad.code_iata AS depart,
+                aa.code_iata AS arrivee,
+                vp.date_heure_depart,
+                tp.id_type_place,
+                tp.nom AS type_place,
+                cp.id_categorie_passager,
+                cp.nom AS categorie,
+                COUNT(dr.id_detail_reservation) AS nb_reservations,
+                COALESCE(SUM(get_prix_passager(vp.id_vol, dr.id_type_place, dr.id_categorie_passager)), 0) AS ca_total
+            FROM vol_programme vp
+            JOIN avion a ON vp.id_avion = a.id_avion
+            JOIN vol v ON vp.id_vol = v.id_vol
+            JOIN aeroport ad ON v.id_aeroport_depart = ad.id_aeroport
+            JOIN aeroport aa ON v.id_aeroport_arrivee = aa.id_aeroport
+            LEFT JOIN reservation r ON vp.id_vol_programme = r.id_vol_programme AND r.statut = 'confirmée'
+            LEFT JOIN detail_reservation dr ON r.id_reservation = dr.id_reservation
+            LEFT JOIN type_place tp ON dr.id_type_place = tp.id_type_place
+            LEFT JOIN categorie_passager cp ON dr.id_categorie_passager = cp.id_categorie_passager
+            WHERE vp.id_vol_programme = ? AND tp.nom IS NOT NULL
+            GROUP BY vp.id_vol_programme, vp.id_vol, vp.id_avion, a.modele, a.numero_immatriculation,
+                     ad.code_iata, aa.code_iata, vp.date_heure_depart, tp.id_type_place, tp.nom,
+                     cp.id_categorie_passager, cp.nom
+            ORDER BY type_place, categorie
+            """;
+        return jdbcTemplate.query(sql, caRowMapper, idVolProgramme);
+    }
+
+    /**
+     * Récupère le CA total recalculé avec les tarifs actuels
+     */
+    public BigDecimal getTotalCARecalcule(Long idVolProgramme) {
+        String sql = """
+            SELECT COALESCE(SUM(get_prix_passager(vp.id_vol, dr.id_type_place, dr.id_categorie_passager)), 0)
+            FROM vol_programme vp
+            JOIN reservation r ON vp.id_vol_programme = r.id_vol_programme AND r.statut = 'confirmée'
+            JOIN detail_reservation dr ON r.id_reservation = dr.id_reservation
+            WHERE vp.id_vol_programme = ?
+            """;
+        return jdbcTemplate.queryForObject(sql, BigDecimal.class, idVolProgramme);
+    }
+
+    /**
      * Récupère le résumé du CA par vol programmé
      */
     public List<CATotalVolProgramme> getCATotalParVol() {

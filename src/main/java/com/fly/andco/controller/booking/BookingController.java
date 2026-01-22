@@ -189,6 +189,30 @@ public class BookingController {
         model.addAttribute("details", details);
         model.addAttribute("caTotal", caTotal);
         model.addAttribute("nbPassagers", nbPassagers);
+        model.addAttribute("recalcul", false);
+        
+        return "views/booking/ca";
+    }
+    
+    /**
+     * Page de calcul du CA recalculé avec les tarifs actuels
+     */
+    @GetMapping("/ca/{id}/recalcul")
+    public String afficherCARecalcule(@PathVariable("id") Long idVolProgramme, Model model) {
+        VolProgramme vol = volProgrammeService.getById(idVolProgramme).orElse(null);
+        if (vol == null) {
+            return "redirect:/booking";
+        }
+        
+        List<CAVolProgramme> details = caService.getCARecalculeAvecTarifsActuels(idVolProgramme);
+        BigDecimal caTotal = caService.getTotalCARecalcule(idVolProgramme);
+        Long nbPassagers = caService.getNbPassagers(idVolProgramme);
+        
+        model.addAttribute("vol", vol);
+        model.addAttribute("details", details);
+        model.addAttribute("caTotal", caTotal);
+        model.addAttribute("nbPassagers", nbPassagers);
+        model.addAttribute("recalcul", true);
         
         return "views/booking/ca";
     }
