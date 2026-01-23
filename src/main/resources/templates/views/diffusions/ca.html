@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA Diffusions Publicitaires - FlyAndCo</title>
+    
+    <link rel="shortcut icon" href="./assets/compiled/svg/favicon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="/assets/compiled/css/app.css">
+    <link rel="stylesheet" href="/assets/compiled/css/app-dark.css">
+    <style>
+        .stat-card {
+            border-left: 4px solid;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-card.primary {
+            border-left-color: #435ebe;
+        }
+        .stat-card.success {
+            border-left-color: #198754;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .filter-card {
+            background-color: #f8f9fa;
+        }
+        .table-ca th {
+            background-color: #435ebe;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div th:replace="fragments/sidebar :: sidebar"></div>
+
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            
+            <div class="page-heading">
+                <div class="page-title">
+                    <div class="row">
+                        <div class="col-12 col-md-6 order-md-1 order-last">
+                            <h3><i class="bi bi-broadcast"></i> Chiffre d'Affaires - Diffusions Publicitaires</h3>
+                            <p class="text-subtitle text-muted">Consultation du CA généré par les diffusions vidéo</p>
+                        </div>
+                        <div class="col-12 col-md-6 order-md-2 order-first">
+                            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/home">Accueil</a></li>
+                                    <li class="breadcrumb-item"><a href="#">Diffusions</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">Chiffre d'Affaires</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire de Filtres -->
+                <section class="section">
+                    <div class="card filter-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-funnel"></i> Filtres
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form th:action="@{/diffusions/ca}" method="get">
+                                <div class="row align-items-end">
+                                    <div class="col-md-3">
+                                        <div class="form-group mb-3">
+                                            <label for="idSociete" class="form-label">Société</label>
+                                            <select class="form-select" id="idSociete" name="idSociete">
+                                                <option value="">Toutes les sociétés</option>
+                                                <option th:each="societe : ${societes}" 
+                                                        th:value="${societe.idSocieteDiffuseur}"
+                                                        th:text="${societe.nom}"
+                                                        th:selected="${societe.idSocieteDiffuseur == idSocieteSelectionnee}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group mb-3">
+                                            <label for="dateDebut" class="form-label">Date début</label>
+                                            <input type="date" class="form-control" id="dateDebut" name="dateDebut"
+                                                   th:value="${dateDebut}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group mb-3">
+                                            <label for="dateFin" class="form-label">Date fin</label>
+                                            <input type="date" class="form-control" id="dateFin" name="dateFin"
+                                                   th:value="${dateFin}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group mb-3">
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary flex-grow-1">
+                                                    <i class="bi bi-calculator"></i> Calculer CA
+                                                </button>
+                                                <a href="/diffusions/ca" class="btn btn-outline-secondary">
+                                                    <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Résultats -->
+                <section class="section" th:if="${resultatsAffiches}">
+                    <!-- Résumé Global -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card stat-card primary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <p class="stat-label mb-1">Total Diffusions</p>
+                                            <p class="stat-value mb-0" th:text="${totalDiffusions}">0</p>
+                                        </div>
+                                        <div class="icon-box bg-light-primary rounded-circle p-3">
+                                            <i class="bi bi-play-circle fs-1 text-primary"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card stat-card success">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <p class="stat-label mb-1">Chiffre d'Affaires Total</p>
+                                            <p class="stat-value mb-0 text-success" th:text="${totalCAFormate}">0 Ar</p>
+                                        </div>
+                                        <div class="icon-box bg-light-success rounded-circle p-3">
+                                            <i class="bi bi-currency-exchange fs-1 text-success"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Détails par Société -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-building"></i> Détails par Société
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-ca">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">#</th>
+                                            <th scope="col">Société</th>
+                                            <th scope="col" class="text-center">Nombre de Diffusions</th>
+                                            <th scope="col" class="text-end">CA (Ariary)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="detail, iterStat : ${detailsParSociete}">
+                                            <td th:text="${iterStat.index + 1}"></td>
+                                            <td>
+                                                <strong th:text="${detail.nomSociete}"></strong>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-primary" th:text="${detail.nombreDiffusions}"></span>
+                                            </td>
+                                            <td class="text-end">
+                                                <strong th:text="${detail.caFormate}"></strong>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(detailsParSociete)}">
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                <i class="bi bi-inbox fs-1"></i>
+                                                <p class="mb-0 mt-2">Aucune donnée trouvée pour cette période</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot th:if="${not #lists.isEmpty(detailsParSociete)}">
+                                        <tr class="table-dark">
+                                            <td colspan="2"><strong>TOTAL</strong></td>
+                                            <td class="text-center"><strong th:text="${totalDiffusions}"></strong></td>
+                                            <td class="text-end"><strong th:text="${totalCAFormate}"></strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Message initial -->
+                <section class="section" th:unless="${resultatsAffiches}">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-search fs-1 text-muted"></i>
+                            <h5 class="mt-3">Sélectionnez vos critères de recherche</h5>
+                            <p class="text-muted">Utilisez les filtres ci-dessus et cliquez sur "Calculer CA" pour afficher les résultats.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/static/js/components/dark.js"></script>
+    <script src="/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="/assets/compiled/js/app.js"></script>
+</body>
+
+</html>
