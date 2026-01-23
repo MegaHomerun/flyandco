@@ -113,8 +113,8 @@ public class DiffusionService {
                 VolProgramme vol = volProgrammeRepository.findById(ligne.getIdVolProgramme()).orElse(null);
                 detail.setVolProgramme(vol);
                 if (vol != null) {
-                    detail.setDescription("Diffusion sur vol " + vol.getVol().getAeroportDepart().getCode() 
-                            + " → " + vol.getVol().getAeroportArrivee().getCode()
+                    detail.setDescription("Diffusion sur vol " + vol.getVol().getAeroportDepart().getCodeIata() 
+                            + " → " + vol.getVol().getAeroportArrivee().getCodeIata()
                             + " du " + vol.getDateHeureDepart().toLocalDate());
                 }
             } else {

@@ -206,8 +206,8 @@
                             <select class="form-select" name="idVolProgramme[]" onchange="calculerTotal()">
                                 <option value="">-- Tous les vols --</option>
                                 ${vols.map(vol => {
-                                    var depart = vol.vol?.aeroportDepart?.code || 'N/A';
-                                    var arrivee = vol.vol?.aeroportArrivee?.code || 'N/A';
+                                    var depart = vol.vol?.aeroportDepart?.codeIata || 'N/A';
+                                    var arrivee = vol.vol?.aeroportArrivee?.codeIata || 'N/A';
                                     var date = vol.dateHeureDepart ? new Date(vol.dateHeureDepart).toLocaleDateString('fr-FR') : '';
                                     return `<option value="${vol.idVolProgramme}">${depart} → ${arrivee} (${date})</option>`;
                                 }).join('')}

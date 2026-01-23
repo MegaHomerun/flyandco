@@ -302,8 +302,8 @@
                                                         <td>
                                                             <span th:text="${detail.description ?: 'Diffusion publicitaire'}"></span>
                                                             <small th:if="${detail.volProgramme != null}" class="d-block text-muted">
-                                                                Vol: <span th:text="${detail.volProgramme.vol.aeroportDepart.code}"></span>
-                                                                → <span th:text="${detail.volProgramme.vol.aeroportArrivee.code}"></span>
+                                                                Vol: <span th:text="${detail.volProgramme.vol.aeroportDepart.codeIata}"></span>
+                                                                → <span th:text="${detail.volProgramme.vol.aeroportArrivee.codeIata}"></span>
                                                             </small>
                                                         </td>
                                                         <td class="text-center" th:text="${detail.nombreDiffusions}"></td>
