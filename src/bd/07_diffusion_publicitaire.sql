@@ -58,7 +58,7 @@ CREATE INDEX idx_facture_date ON facture(date_facture);
 CREATE INDEX idx_facture_periode ON facture(date_debut_periode, date_fin_periode);
 
 -- ============================================================
--- TABLE DETAIL_FACTURE
+-- TABLE DETAIL_FACTURE (avec suivi paiement prorata)
 -- ============================================================
 CREATE TABLE detail_facture (
     id_detail_facture SERIAL PRIMARY KEY,
@@ -68,7 +68,8 @@ CREATE TABLE detail_facture (
     description VARCHAR(255),
     nombre_diffusions INT NOT NULL,
     prix_unitaire NUMERIC(12,2) NOT NULL,
-    montant_ligne NUMERIC(12,2) NOT NULL
+    montant_ligne NUMERIC(12,2) NOT NULL,
+    montant_paye NUMERIC(12,2) DEFAULT 0
 );
 
 CREATE INDEX idx_detail_facture_facture ON detail_facture(id_facture);
@@ -137,6 +138,32 @@ AFTER INSERT OR UPDATE ON paiement
 FOR EACH ROW EXECUTE FUNCTION update_facture_statut();
 
 -- ============================================================
+-- FONCTION: Répartition prorata d'un paiement sur les lignes
+-- ============================================================
+CREATE OR REPLACE FUNCTION repartir_paiement_prorata(p_id_facture INT, p_montant_paiement NUMERIC)
+RETURNS VOID AS $$
+DECLARE
+    v_montant_total NUMERIC(12,2);
+    v_ligne RECORD;
+    v_part_ligne NUMERIC(12,2);
+BEGIN
+    -- Récupérer le montant total de la facture
+    SELECT montant INTO v_montant_total FROM facture WHERE id_facture = p_id_facture;
+    
+    -- Répartir le paiement au prorata sur chaque ligne
+    FOR v_ligne IN SELECT * FROM detail_facture WHERE id_facture = p_id_facture
+    LOOP
+        -- Calcul prorata: part_ligne = paiement × (montant_ligne / montant_total)
+        v_part_ligne := p_montant_paiement * (v_ligne.montant_ligne / v_montant_total);
+        
+        UPDATE detail_facture 
+        SET montant_paye = COALESCE(montant_paye, 0) + v_part_ligne
+        WHERE id_detail_facture = v_ligne.id_detail_facture;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================
 -- DONNÉES INITIALES
 -- ============================================================
 
@@ -157,8 +184,9 @@ INSERT INTO tarif_diffusion (id_societe_diffuseur, id_vol, id_type_place, prix_u
 INSERT INTO facture (numero_facture, id_societe_diffuseur, date_facture, date_debut_periode, date_fin_periode, montant, statut)
 VALUES ('FAC-2025-001', 1, '2025-12-31', '2025-12-01', '2025-12-31', 8000000, 'partiellement_payée');
 
-INSERT INTO detail_facture (id_facture, description, nombre_diffusions, prix_unitaire, montant_ligne)
-VALUES (1, 'Diffusions publicitaires - Décembre 2025', 20, 400000, 8000000);
+-- 1 seule ligne = prorata 100% sur cette ligne
+INSERT INTO detail_facture (id_facture, description, nombre_diffusions, prix_unitaire, montant_ligne, montant_paye)
+VALUES (1, 'Diffusions publicitaires - Décembre 2025', 20, 400000, 8000000, 1000000);
 
 -- Paiement partiel Vaniala - 1 000 000 Ar le 15 décembre 2025
 INSERT INTO paiement (id_facture, date_paiement, montant_paye, mode_paiement, reference_paiement, notes)
@@ -168,8 +196,8 @@ VALUES (1, '2025-12-15', 1000000, 'virement', 'VIR-2025-001', 'Acompte décembre
 INSERT INTO facture (numero_facture, id_societe_diffuseur, date_facture, date_debut_periode, date_fin_periode, montant, statut)
 VALUES ('FAC-2025-002', 2, '2025-12-31', '2025-12-01', '2025-12-31', 4000000, 'émise');
 
-INSERT INTO detail_facture (id_facture, description, nombre_diffusions, prix_unitaire, montant_ligne)
-VALUES (2, 'Diffusions publicitaires - Décembre 2025', 10, 400000, 4000000);
+INSERT INTO detail_facture (id_facture, description, nombre_diffusions, prix_unitaire, montant_ligne, montant_paye)
+VALUES (2, 'Diffusions publicitaires - Décembre 2025', 10, 400000, 4000000, 0);
 
 -- ============================================================
 -- VÉRIFICATION
@@ -178,3 +206,8 @@ VALUES (2, 'Diffusions publicitaires - Décembre 2025', 10, 400000, 4000000);
 -- Résultat attendu:
 -- Vaniala: 20 diffusions, 8 000 000 Ar facturé, 1 000 000 Ar payé, 7 000 000 Ar reste
 -- Lewis: 10 diffusions, 4 000 000 Ar facturé, 0 Ar payé, 4 000 000 Ar reste
+
+-- ============================================================
+-- MIGRATION (si tables existent déjà)
+-- ============================================================
+-- ALTER TABLE detail_facture ADD COLUMN IF NOT EXISTS montant_paye NUMERIC(12,2) DEFAULT 0;
