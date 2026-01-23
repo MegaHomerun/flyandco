@@ -38,6 +38,9 @@ public class DetailFacture {
     @Column(name = "montant_ligne", nullable = false, precision = 12, scale = 2)
     private BigDecimal montantLigne;
 
+    @Column(name = "montant_paye", precision = 12, scale = 2)
+    private BigDecimal montantPaye = BigDecimal.ZERO;
+
     // Constructeurs
     public DetailFacture() {}
 
@@ -119,5 +122,29 @@ public class DetailFacture {
 
     public void setMontantLigne(BigDecimal montantLigne) {
         this.montantLigne = montantLigne;
+    }
+
+    public BigDecimal getMontantPaye() {
+        return montantPaye != null ? montantPaye : BigDecimal.ZERO;
+    }
+
+    public void setMontantPaye(BigDecimal montantPaye) {
+        this.montantPaye = montantPaye;
+    }
+
+    public BigDecimal getMontantRestant() {
+        return montantLigne.subtract(getMontantPaye());
+    }
+
+    public String getMontantLigneFormate() {
+        return String.format("%,.0f Ar", montantLigne);
+    }
+
+    public String getMontantPayeFormate() {
+        return String.format("%,.0f Ar", getMontantPaye());
+    }
+
+    public String getMontantRestantFormate() {
+        return String.format("%,.0f Ar", getMontantRestant());
     }
 }

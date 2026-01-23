@@ -3,6 +3,7 @@ package com.fly.andco.controller.diffusions;
 import com.fly.andco.model.diffusions.Facture;
 import com.fly.andco.model.diffusions.Paiement;
 import com.fly.andco.model.diffusions.SocieteDiffuseur;
+import com.fly.andco.model.vols.VolProgramme;
 import com.fly.andco.service.diffusions.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,6 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -26,10 +28,102 @@ public class DiffusionController {
         this.diffusionService = diffusionService;
     }
     
+    // ===============================================
+    // PAGE COMMANDE DE DIFFUSIONS
+    // ===============================================
+    
     /**
-     * Page de Chiffre d'Affaires des Diffusions Publicitaires
-     * URL: /diffusions/ca
+     * Affiche le formulaire de commande de diffusions
      */
+    @GetMapping("/commande")
+    public String afficherFormulaireCommande(Model model) {
+        // Liste des sociétés
+        List<SocieteDiffuseur> societes = diffusionService.getAllSocietes();
+        model.addAttribute("societes", societes);
+        
+        // Liste des vols programmés
+        List<VolProgramme> vols = diffusionService.getAllVolsProgrammes();
+        model.addAttribute("vols", vols);
+        
+        // Tarif par défaut
+        BigDecimal tarifDefaut = diffusionService.getTarifDefaut();
+        model.addAttribute("tarifDefaut", tarifDefaut);
+        
+        // Commande vide pour le formulaire
+        CommandeDiffusionDTO commande = new CommandeDiffusionDTO();
+        commande.setDateFacture(LocalDate.now());
+        model.addAttribute("commande", commande);
+        
+        return "views/diffusions/commande";
+    }
+    
+    /**
+     * Crée une nouvelle facture à partir de la commande
+     */
+    @PostMapping("/commande")
+    public String creerCommande(
+            @RequestParam Long idSociete,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFacture,
+            @RequestParam(required = false) String notes,
+            @RequestParam(name = "idVolProgramme[]", required = false) Long[] idVolProgrammes,
+            @RequestParam(name = "nombreDiffusions[]", required = false) Integer[] nombreDiffusions,
+            RedirectAttributes redirectAttributes) {
+        
+        try {
+            // Construire le DTO
+            CommandeDiffusionDTO commande = new CommandeDiffusionDTO();
+            commande.setIdSociete(idSociete);
+            commande.setDateFacture(dateFacture);
+            commande.setNotes(notes);
+            
+            // Ajouter les lignes
+            if (idVolProgrammes != null && nombreDiffusions != null) {
+                for (int i = 0; i < idVolProgrammes.length; i++) {
+                    if (nombreDiffusions[i] != null && nombreDiffusions[i] > 0) {
+                        LigneDiffusionDTO ligne = new LigneDiffusionDTO();
+                        ligne.setIdVolProgramme(idVolProgrammes[i]);
+                        ligne.setNombreDiffusions(nombreDiffusions[i]);
+                        commande.ajouterLigne(ligne);
+                    }
+                }
+            }
+            
+            if (commande.getLignes().isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Veuillez ajouter au moins une ligne de diffusion");
+                return "redirect:/diffusions/commande";
+            }
+            
+            // Créer la facture
+            Facture facture = diffusionService.creerCommande(commande);
+            
+            redirectAttributes.addFlashAttribute("success", 
+                String.format("Facture %s créée avec succès ! Montant total: %s", 
+                    facture.getNumeroFacture(), facture.getMontantFormate()));
+            
+            // Rediriger vers la page de paiements de cette société
+            return "redirect:/diffusions/paiements?idSociete=" + idSociete;
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Erreur lors de la création: " + e.getMessage());
+            return "redirect:/diffusions/commande";
+        }
+    }
+    
+    /**
+     * API pour récupérer le tarif applicable (AJAX)
+     */
+    @GetMapping("/api/tarif")
+    @ResponseBody
+    public BigDecimal getTarif(
+            @RequestParam(required = false) Long idSociete,
+            @RequestParam(required = false) Long idVol) {
+        return diffusionService.getTarifApplicable(idSociete, idVol, null);
+    }
+    
+    // ===============================================
+    // PAGE CHIFFRE D'AFFAIRES
+    // ===============================================
+    
     @GetMapping("/ca")
     public String afficherCA(
             @RequestParam(required = false) Long idSociete,
@@ -69,10 +163,10 @@ public class DiffusionController {
         return "views/diffusions/ca";
     }
     
-    /**
-     * Page de gestion des paiements
-     * URL: /diffusions/paiements
-     */
+    // ===============================================
+    // PAGE GESTION DES PAIEMENTS
+    // ===============================================
+    
     @GetMapping("/paiements")
     public String afficherPaiements(
             @RequestParam(required = false) Long idSociete,
@@ -105,7 +199,7 @@ public class DiffusionController {
     }
     
     /**
-     * Enregistrer un nouveau paiement
+     * Enregistrer un nouveau paiement avec répartition prorata
      */
     @PostMapping("/paiements/ajouter")
     public String ajouterPaiement(
@@ -122,7 +216,7 @@ public class DiffusionController {
             Facture facture = paiement.getFacture();
             
             redirectAttributes.addFlashAttribute("success", 
-                String.format("Paiement de %,.0f Ar enregistré avec succès", montant));
+                String.format("Paiement de %,.0f Ar enregistré avec succès (réparti au prorata sur les lignes)", montant));
             
             return "redirect:/diffusions/paiements?idSociete=" + facture.getSocieteDiffuseur().getIdSocieteDiffuseur();
         } catch (Exception e) {
@@ -131,12 +225,26 @@ public class DiffusionController {
         }
     }
     
-    /**
-     * Détails d'une facture (AJAX ou modal)
-     */
+    // ===============================================
+    // API FACTURES (pour AJAX/modals)
+    // ===============================================
+    
     @GetMapping("/factures/{id}")
     @ResponseBody
     public Facture getFacture(@PathVariable Long id) {
         return diffusionService.getFactureById(id);
+    }
+    
+    @GetMapping("/factures/{id}/details")
+    public String afficherDetailsFacture(@PathVariable Long id, Model model) {
+        Facture facture = diffusionService.getFactureById(id);
+        if (facture == null) {
+            return "redirect:/diffusions/paiements";
+        }
+        
+        model.addAttribute("facture", facture);
+        model.addAttribute("paiements", diffusionService.getPaiementsByFacture(id));
+        
+        return "views/diffusions/facture-details";
     }
 }

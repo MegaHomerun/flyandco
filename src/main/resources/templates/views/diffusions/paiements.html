@@ -227,58 +227,117 @@
                         </div>
                     </div>
 
-                    <!-- Liste des factures -->
+                    <!-- Liste des factures avec détails prorata -->
                     <div class="card mt-4">
-                        <div class="card-header">
+                        <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-receipt"></i> Factures de <span th:text="${societeSelectionnee.nom}"></span>
                             </h5>
+                            <a th:href="@{/diffusions/commande}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Nouvelle commande
+                            </a>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover table-factures">
-                                    <thead>
-                                        <tr>
-                                            <th>N° Facture</th>
-                                            <th>Période</th>
-                                            <th class="text-center">Diffusions</th>
-                                            <th class="text-end">Montant</th>
-                                            <th class="text-end">Payé</th>
-                                            <th class="text-end">Reste</th>
-                                            <th class="text-center">Statut</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr th:each="facture : ${factures}">
-                                            <td><strong th:text="${facture.numeroFacture}"></strong></td>
-                                            <td>
-                                                <small th:text="${#temporals.format(facture.dateDebutPeriode, 'dd/MM/yyyy')}"></small>
-                                                <small> - </small>
-                                                <small th:text="${#temporals.format(facture.dateFinPeriode, 'dd/MM/yyyy')}"></small>
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="badge bg-primary" th:text="${facture.totalDiffusions}"></span>
-                                            </td>
-                                            <td class="text-end" th:text="${facture.montantFormate}"></td>
-                                            <td class="text-end text-success" th:text="${facture.montantPayeFormate}"></td>
-                                            <td class="text-end">
-                                                <strong th:class="${facture.montantRestant.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? 'text-danger' : 'text-success'}"
-                                                        th:text="${facture.montantRestantFormate}"></strong>
-                                            </td>
-                                            <td class="text-center">
-                                                <span th:if="${facture.statut == 'émise'}" class="badge badge-statut-emise">Émise</span>
-                                                <span th:if="${facture.statut == 'partiellement_payée'}" class="badge badge-statut-partielle">Partielle</span>
-                                                <span th:if="${facture.statut == 'payée'}" class="badge badge-statut-payee">Payée</span>
-                                            </td>
-                                        </tr>
-                                        <tr th:if="${#lists.isEmpty(factures)}">
-                                            <td colspan="7" class="text-center text-muted py-4">
-                                                <i class="bi bi-inbox fs-1"></i>
-                                                <p class="mb-0 mt-2">Aucune facture pour cette société</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="accordion" id="accordionFactures">
+                                <div th:each="facture, iterStat : ${factures}" class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" 
+                                                th:attr="data-bs-toggle='collapse', data-bs-target='#collapse' + ${iterStat.index}">
+                                            <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                                <div>
+                                                    <strong th:text="${facture.numeroFacture}"></strong>
+                                                    <span class="ms-2 badge" 
+                                                          th:classappend="${facture.statut == 'payée' ? 'bg-success' : (facture.statut == 'partiellement_payée' ? 'bg-warning text-dark' : 'bg-secondary')}"
+                                                          th:text="${facture.statut == 'payée' ? 'Payée' : (facture.statut == 'partiellement_payée' ? 'Partielle' : 'Émise')}">
+                                                    </span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <small class="text-muted">Total: </small>
+                                                    <span th:text="${facture.montantFormate}"></span>
+                                                    <span class="mx-2">|</span>
+                                                    <small class="text-success">Payé: </small>
+                                                    <span class="text-success" th:text="${facture.montantPayeFormate}"></span>
+                                                    <span class="mx-2">|</span>
+                                                    <small class="text-danger">Reste: </small>
+                                                    <span class="text-danger" th:text="${facture.montantRestantFormate}"></span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div th:id="'collapse' + ${iterStat.index}" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <!-- Info facture -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Période</small><br>
+                                                    <span th:text="${#temporals.format(facture.dateDebutPeriode, 'dd/MM/yyyy')}"></span>
+                                                    <span> - </span>
+                                                    <span th:text="${#temporals.format(facture.dateFinPeriode, 'dd/MM/yyyy')}"></span>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Date facture</small><br>
+                                                    <span th:text="${#temporals.format(facture.dateFacture, 'dd/MM/yyyy')}"></span>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <small class="text-muted">Total diffusions</small><br>
+                                                    <span class="badge bg-primary" th:text="${facture.totalDiffusions}"></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Tableau des lignes avec prorata -->
+                                            <h6><i class="bi bi-list-ul"></i> Détail des lignes (répartition prorata)</h6>
+                                            <table class="table table-sm table-bordered">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Description</th>
+                                                        <th class="text-center">Diffusions</th>
+                                                        <th class="text-end">Prix unit.</th>
+                                                        <th class="text-end">Montant</th>
+                                                        <th class="text-end text-success">Payé</th>
+                                                        <th class="text-end text-danger">Reste</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr th:each="detail : ${facture.details}">
+                                                        <td>
+                                                            <span th:text="${detail.description ?: 'Diffusion publicitaire'}"></span>
+                                                            <small th:if="${detail.volProgramme != null}" class="d-block text-muted">
+                                                                Vol: <span th:text="${detail.volProgramme.vol.aeroportDepart.code}"></span>
+                                                                → <span th:text="${detail.volProgramme.vol.aeroportArrivee.code}"></span>
+                                                            </small>
+                                                        </td>
+                                                        <td class="text-center" th:text="${detail.nombreDiffusions}"></td>
+                                                        <td class="text-end" th:text="${#numbers.formatDecimal(detail.prixUnitaire, 0, 'COMMA', 0, 'POINT')} + ' Ar'"></td>
+                                                        <td class="text-end" th:text="${detail.montantLigneFormate}"></td>
+                                                        <td class="text-end text-success" th:text="${detail.montantPayeFormate}"></td>
+                                                        <td class="text-end text-danger" th:text="${detail.montantRestantFormate}"></td>
+                                                    </tr>
+                                                </tbody>
+                                                <tfoot class="table-secondary">
+                                                    <tr>
+                                                        <th colspan="3">TOTAL</th>
+                                                        <th class="text-end" th:text="${facture.montantFormate}"></th>
+                                                        <th class="text-end text-success" th:text="${facture.montantPayeFormate}"></th>
+                                                        <th class="text-end text-danger" th:text="${facture.montantRestantFormate}"></th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                            
+                                            <!-- Info prorata -->
+                                            <div class="alert alert-info py-2 mb-0" th:if="${facture.statut == 'partiellement_payée'}">
+                                                <small><i class="bi bi-info-circle"></i> Les paiements sont répartis au prorata proportionnel sur chaque ligne.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div th:if="${#lists.isEmpty(factures)}" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-1"></i>
+                                <p class="mb-0 mt-2">Aucune facture pour cette société</p>
+                                <a th:href="@{/diffusions/commande}" class="btn btn-primary mt-3">
+                                    <i class="bi bi-plus-circle"></i> Créer une commande
+                                </a>
                             </div>
                         </div>
                     </div>

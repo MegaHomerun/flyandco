@@ -41,4 +41,10 @@ public interface TarifDiffusionRepository extends JpaRepository<TarifDiffusion, 
                 .map(TarifDiffusion::getPrixUnitaire)
                 .orElse(BigDecimal.valueOf(400000));
     }
+    
+    default BigDecimal getTarifDefaut() {
+        return findTarifDefaut()
+                .map(TarifDiffusion::getPrixUnitaire)
+                .orElse(BigDecimal.valueOf(400000));
+    }
 }
