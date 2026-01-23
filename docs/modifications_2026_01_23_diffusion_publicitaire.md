@@ -5,7 +5,7 @@
 
 ## 📋 RÉSUMÉ
 
-Les sociétés peuvent diffuser des vidéos publicitaires sur les écrans des avions. La diffusion est payante avec un système de facturation flexible supportant les paiements multiples et les échéanciers.
+Les sociétés peuvent diffuser des vidéos publicitaires sur les écrans des avions. La diffusion est payante avec un système de facturation flexible supportant les paiements multiples avec **répartition au prorata proportionnel**.
 
 **Contexte initial :**
 - Coût standard : 400 000 Ar / diffusion
@@ -16,7 +16,48 @@ Les sociétés peuvent diffuser des vidéos publicitaires sur les écrans des av
 
 # PARTIE 1 : AFFICHAGE (IHM)
 
-## 1.1 Page : Chiffre d'Affaires Diffusions
+## 1.1 Page : Commande de Diffusions (NOUVEAU)
+
+**URL :** `/diffusions/commande`
+
+**Titre de la page :** "Commander des Diffusions Publicitaires"
+
+### Formulaire de Commande
+
+| Champ | Type | Obligatoire | Source des données |
+|-------|------|-------------|-------------------|
+| Société | Liste déroulante | Oui | Table `societe_diffuseur` |
+| Date facture | Date | Oui | Défaut: aujourd'hui |
+| Lignes de diffusion | Tableau dynamique | Oui (min 1 ligne) | - |
+
+### Tableau dynamique : Lignes de Diffusion
+
+| Colonne | Type | Source | Calcul |
+|---------|------|--------|--------|
+| Vol programmé | Liste déroulante | Table `vol_programme` | - |
+| Nombre diffusions | Nombre (min 1) | Saisie | - |
+| Prix unitaire | Montant (lecture seule) | Table `tarif_diffusion` | Auto |
+| Sous-total | Montant (lecture seule) | - | nb × prix unitaire |
+
+### Boutons
+
+| Bouton | Action |
+|--------|--------|
+| ➕ Ajouter une ligne | Ajoute une nouvelle ligne de diffusion |
+| 🗑️ Supprimer | Supprime une ligne |
+| Valider la commande | Crée la facture (statut 'émise') et redirige vers paiements |
+
+### Logique Métier
+
+Une fois validée :
+1. Une facture est créée avec statut 'émise'
+2. Chaque ligne devient un `detail_facture` avec `montant_paye = 0`
+3. La facture est **clôturée** (non modifiable)
+4. Redirection vers la page de paiements
+
+---
+
+## 1.2 Page : Chiffre d'Affaires Diffusions
 
 **URL :** `/diffusions/ca`
 
@@ -111,26 +152,23 @@ Tarifs de diffusion (par défaut ou spécifiques par société).
 3. Sinon tarif société seul
 4. Sinon tarif par défaut (id_societe_diffuseur = NULL)
 
-### Table `facture`
-Factures mères (regroupement de diffusions).
+### Table `facture` (Simplifiée)
+Factures mères (regroupement de diffusions) - **clôturées après création**.
 
 | Colonne | Type | Contraintes | Description |
 |---------|------|-------------|-------------|
 | id_facture | SERIAL | PRIMARY KEY | Identifiant unique |
-| numero_facture | VARCHAR(50) | UNIQUE, NOT NULL | Numéro formaté (ex: FAC-2025-001) |
+| numero_facture | VARCHAR(50) | UNIQUE, NOT NULL | Numéro formaté (ex: FAC-2026-001) |
 | id_societe_diffuseur | INT | FK, NOT NULL | Société facturée |
 | date_facture | DATE | NOT NULL | Date d'émission |
 | date_debut_periode | DATE | NOT NULL | Début période facturée |
 | date_fin_periode | DATE | NOT NULL | Fin période facturée |
-| montant_ht | NUMERIC(12,2) | NOT NULL | Montant HT total |
-| taux_tva | NUMERIC(5,2) | DEFAULT 0 | Taux TVA (%) |
-| montant_tva | NUMERIC(12,2) | DEFAULT 0 | Montant TVA |
-| montant_ttc | NUMERIC(12,2) | NOT NULL | Montant TTC |
+| montant | NUMERIC(12,2) | NOT NULL | Montant total |
 | statut | VARCHAR(30) | DEFAULT 'émise' | émise, partiellement_payée, payée, annulée |
 | notes | TEXT | - | Remarques |
 
-### Table `detail_facture`
-Lignes de facture (factures filles - détails des diffusions).
+### Table `detail_facture` (Avec suivi paiement prorata)
+Lignes de facture - **chaque ligne suit son propre montant payé**.
 
 | Colonne | Type | Contraintes | Description |
 |---------|------|-------------|-------------|
@@ -142,6 +180,7 @@ Lignes de facture (factures filles - détails des diffusions).
 | nombre_diffusions | INT | NOT NULL | Nombre de diffusions |
 | prix_unitaire | NUMERIC(12,2) | NOT NULL | Prix unitaire appliqué |
 | montant_ligne | NUMERIC(12,2) | NOT NULL | = nombre_diffusions × prix_unitaire |
+| **montant_paye** | NUMERIC(12,2) | DEFAULT 0 | **Montant payé sur cette ligne (prorata)** |
 
 ### Table `paiement`
 Paiements reçus (supporte paiements multiples par facture).
@@ -150,49 +189,57 @@ Paiements reçus (supporte paiements multiples par facture).
 |---------|------|-------------|-------------|
 | id_paiement | SERIAL | PRIMARY KEY | Identifiant unique |
 | id_facture | INT | FK, NOT NULL | Facture payée |
-| id_echeance | INT | FK, NULLABLE | Échéance associée (si plan) |
 | date_paiement | DATE | NOT NULL | Date du paiement |
 | montant_paye | NUMERIC(12,2) | NOT NULL | Montant payé |
-| mode_paiement | VARCHAR(50) | - | virement, espèces, chèque, mobile |
+| mode_paiement | VARCHAR(50) | - | virement, espèces, chèque, mobile_money, carte |
 | reference_paiement | VARCHAR(100) | - | Référence transaction |
 | notes | TEXT | - | Remarques |
 
-### Table `plan_echeancier`
-Plans de paiement échelonnés.
+---
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| id_plan_echeancier | SERIAL | PRIMARY KEY | Identifiant unique |
-| id_facture | INT | FK, NOT NULL, UNIQUE | Facture concernée |
-| montant_total | NUMERIC(12,2) | NOT NULL | Montant total à payer |
-| nombre_echeances | INT | NOT NULL | Nombre d'échéances |
-| date_debut | DATE | NOT NULL | Date 1ère échéance |
-| date_fin_prevue | DATE | NOT NULL | Date dernière échéance prévue |
-| statut | VARCHAR(30) | DEFAULT 'actif' | actif, terminé, annulé |
+## 2.2 Logique de Répartition Prorata Proportionnel
 
-### Table `echeance`
-Échéances individuelles d'un plan.
+### Principe
 
-| Colonne | Type | Contraintes | Description |
-|---------|------|-------------|-------------|
-| id_echeance | SERIAL | PRIMARY KEY | Identifiant unique |
-| id_plan_echeancier | INT | FK, NOT NULL | Plan parent |
-| numero_echeance | INT | NOT NULL | Numéro de l'échéance (1, 2, 3...) |
-| date_echeance_prevue | DATE | NOT NULL | Date prévue |
-| montant_prevu | NUMERIC(12,2) | NOT NULL | Montant prévu |
-| date_paiement_reel | DATE | - | Date paiement effectif |
-| montant_paye | NUMERIC(12,2) | DEFAULT 0 | Montant effectivement payé |
-| statut | VARCHAR(30) | DEFAULT 'en_attente' | en_attente, payée, en_retard |
+Quand un paiement est effectué sur une facture contenant plusieurs lignes, le montant est réparti **proportionnellement** sur chaque ligne.
 
-## 2.2 Vue pour le Calcul du CA
+### Exemple Concret
 
-### Vue `v_ca_diffusions`
-```sql
--- Agrège le CA des diffusions par société et période
-SELECT societe, date_facture, total_diffusions, total_ca
-FROM v_ca_diffusions
-WHERE date_facture BETWEEN ? AND ?
+**Facture avec 3 lignes :**
+| Ligne | Vol | Montant | Part (%) |
+|-------|-----|---------|----------|
+| 1 | TNR-NOS | 200 Ar | 20% |
+| 2 | TNR-MJN | 200 Ar | 20% |
+| 3 | TNR-DIE | 600 Ar | 60% |
+| **Total** | | **1 000 Ar** | **100%** |
+
+**Paiement de 200 Ar (20% du total) :**
+| Ligne | Montant | % du total | Paiement reçu |
+|-------|---------|------------|---------------|
+| 1 | 200 Ar | 20% | 200 × 20% = **40 Ar** |
+| 2 | 200 Ar | 20% | 200 × 20% = **40 Ar** |
+| 3 | 600 Ar | 60% | 200 × 60% = **120 Ar** |
+| **Total** | | | **200 Ar** ✓ |
+
+### Formule
+
 ```
+montant_ligne_payé = paiement × (montant_ligne / montant_total_facture)
+```
+
+### Algorithme
+
+```java
+// Pour chaque paiement
+BigDecimal pourcentagePaiement = montantPaiement.divide(facture.getMontant(), 4, RoundingMode.HALF_UP);
+
+for (DetailFacture ligne : facture.getDetails()) {
+    BigDecimal partLigne = ligne.getMontantLigne().multiply(pourcentagePaiement);
+    ligne.setMontantPaye(ligne.getMontantPaye().add(partLigne));
+}
+```
+
+---
 
 ## 2.3 Données Initiales
 
@@ -201,6 +248,8 @@ WHERE date_facture BETWEEN ? AND ?
 | Vaniala | 20 | 400 000 Ar | 8 000 000 Ar |
 | Lewis | 10 | 400 000 Ar | 4 000 000 Ar |
 | **TOTAL** | **30** | - | **12 000 000 Ar** |
+
+**Paiement Vaniala :** 1 000 000 Ar le 15/12/2025 → Reste 7 000 000 Ar
 
 ---
 
@@ -214,11 +263,9 @@ WHERE date_facture BETWEEN ? AND ?
 |--------|-------|-------------|
 | `SocieteDiffuseur` | societe_diffuseur | Entité société cliente |
 | `TarifDiffusion` | tarif_diffusion | Entité tarif diffusion |
-| `Facture` | facture | Entité facture mère |
-| `DetailFacture` | detail_facture | Entité ligne de facture |
+| `Facture` | facture | Entité facture (simplifiée sans TVA) |
+| `DetailFacture` | detail_facture | Entité ligne de facture avec montant_paye |
 | `Paiement` | paiement | Entité paiement |
-| `PlanEcheancier` | plan_echeancier | Entité plan de paiement |
-| `Echeance` | echeance | Entité échéance |
 
 ### DTO (Data Transfer Objects)
 
@@ -226,117 +273,65 @@ WHERE date_facture BETWEEN ? AND ?
 |--------|-------------|
 | `CADiffusionDTO` | Résultat du calcul CA (totalDiffusions, totalCA) |
 | `CAParSocieteDTO` | Détail CA par société (nomSociete, nbDiffusions, ca) |
-| `FiltreCADTO` | Critères de filtrage (idSociete, dateDebut, dateFin) |
+| `ResumePaiementDTO` | Résumé paiements (totalFacturé, totalPayé, reste) |
+| `CommandeDiffusionDTO` | Commande de diffusion (société, lignes) |
+| `LigneDiffusionDTO` | Ligne de commande (vol, nbDiffusions) |
 
 ## 3.2 Repositories
 
 ### Package `com.fly.andco.repository.diffusions`
 
-| Interface | Méthodes clés | Tables utilisées |
-|-----------|---------------|------------------|
-| `SocieteDiffuseurRepository` | `findAll()`, `findById()` | societe_diffuseur |
-| `TarifDiffusionRepository` | `findTarifApplicable()` | tarif_diffusion |
-| `FactureRepository` | `findByFilters()`, `sumMontantHT()` | facture |
-| `DetailFactureRepository` | `findByFacture()`, `sumDiffusions()` | detail_facture |
-| `PaiementRepository` | `findByFacture()`, `sumPaiements()` | paiement |
-| `PlanEcheancierRepository` | `findByFacture()` | plan_echeancier |
-| `EcheanceRepository` | `findByPlan()` | echeance |
-
-### Requêtes JPQL importantes
-
-```java
-// FactureRepository
-@Query("SELECT SUM(f.montantHt) FROM Facture f " +
-       "WHERE (:idSociete IS NULL OR f.societeDiffuseur.id = :idSociete) " +
-       "AND f.dateFacture BETWEEN :dateDebut AND :dateFin " +
-       "AND f.statut != 'annulée'")
-BigDecimal calculerCA(@Param("idSociete") Long idSociete, 
-                      @Param("dateDebut") LocalDate dateDebut, 
-                      @Param("dateFin") LocalDate dateFin);
-
-// DetailFactureRepository
-@Query("SELECT SUM(d.nombreDiffusions) FROM DetailFacture d " +
-       "JOIN d.facture f " +
-       "WHERE (:idSociete IS NULL OR f.societeDiffuseur.id = :idSociete) " +
-       "AND f.dateFacture BETWEEN :dateDebut AND :dateFin")
-Integer compterDiffusions(@Param("idSociete") Long idSociete,
-                          @Param("dateDebut") LocalDate dateDebut,
-                          @Param("dateFin") LocalDate dateFin);
-```
+| Interface | Méthodes clés |
+|-----------|---------------|
+| `SocieteDiffuseurRepository` | `findAll()`, `findById()`, `findAllOrderByNom()` |
+| `TarifDiffusionRepository` | `getTarifApplicable()` |
+| `FactureRepository` | `findBySociete()`, `calculerCA*()`, `findLastNumeroFactureForYear()` |
+| `DetailFactureRepository` | `findByFacture()`, `compterDiffusions*()` |
+| `PaiementRepository` | `findByFacture()`, `sumMontantPayeByFacture()` |
 
 ## 3.3 Services
 
-### Package `com.fly.andco.service.diffusions`
+### `DiffusionService` - Méthodes principales
 
-#### `DiffusionService`
-
-| Méthode | Signature | Retour | Tables/Vues |
-|---------|-----------|--------|-------------|
-| `calculerCA` | `(Long idSociete, LocalDate debut, LocalDate fin)` | `CADiffusionDTO` | facture, detail_facture |
-| `calculerCAParSociete` | `(LocalDate debut, LocalDate fin)` | `List<CAParSocieteDTO>` | facture, detail_facture, societe_diffuseur |
-| `getAllSocietes` | `()` | `List<SocieteDiffuseur>` | societe_diffuseur |
-| `getTarifApplicable` | `(Long idSociete, Long idVol, Long idTypePlace)` | `BigDecimal` | tarif_diffusion |
-
-#### `FactureService`
-
-| Méthode | Signature | Retour | Tables |
-|---------|-----------|--------|--------|
-| `creerFacture` | `(FactureDTO dto)` | `Facture` | facture, detail_facture |
-| `ajouterPaiement` | `(Long idFacture, PaiementDTO dto)` | `Paiement` | paiement, facture |
-| `getMontantRestant` | `(Long idFacture)` | `BigDecimal` | facture, paiement |
-| `creerPlanEcheancier` | `(Long idFacture, int nbEcheances)` | `PlanEcheancier` | plan_echeancier, echeance |
+| Méthode | Description |
+|---------|-------------|
+| `creerCommande(CommandeDiffusionDTO)` | Crée une facture avec plusieurs lignes |
+| `ajouterPaiement(idFacture, montant, ...)` | Ajoute un paiement avec **répartition prorata** |
+| `calculerCA(idSociete, dateDebut, dateFin)` | Calcule le CA filtré |
+| `getResumePaiementSociete(idSociete)` | Résumé paiements d'une société |
 
 ## 3.4 Contrôleurs
 
-### Package `com.fly.andco.controller.diffusions`
+### `DiffusionController`
 
-#### `DiffusionController`
-
-| Endpoint | Méthode HTTP | Fonction | Service appelé |
-|----------|--------------|----------|----------------|
-| `/diffusions/ca` | GET | `afficherCA()` | `DiffusionService.calculerCA()`, `calculerCAParSociete()` |
-
-**Paramètres GET :**
-- `idSociete` (Long, optionnel)
-- `dateDebut` (LocalDate, optionnel)
-- `dateFin` (LocalDate, optionnel)
-
-**Modèle Thymeleaf :**
-- `societes` : Liste des sociétés pour le dropdown
-- `totalDiffusions` : Nombre total de diffusions
-- `totalCA` : CA total formaté
-- `detailsParSociete` : Liste des CA par société
-- `filtreActif` : Boolean indiquant si un filtre est appliqué
+| Endpoint | Méthode | Description |
+|----------|---------|-------------|
+| `/diffusions/commande` | GET | Formulaire de commande |
+| `/diffusions/commande` | POST | Crée la facture |
+| `/diffusions/ca` | GET | Page CA avec filtres |
+| `/diffusions/paiements` | GET | Page gestion paiements |
+| `/diffusions/paiements/ajouter` | POST | Enregistre un paiement |
 
 ---
 
 # CHECKLIST DÉVELOPPEUR
 
 ## Base de données
-- [ ] Créer le script `07_diffusion_publicitaire.sql`
-- [ ] Ajouter les tables : societe_diffuseur, tarif_diffusion, facture, detail_facture, paiement, plan_echeancier, echeance
-- [ ] Créer la vue v_ca_diffusions
-- [ ] Insérer les données initiales (Vaniala, Lewis, tarif 400 000 Ar)
-- [ ] Créer les factures de décembre 2025
+- [x] Créer le script `07_diffusion_publicitaire.sql`
+- [x] Tables : societe_diffuseur, tarif_diffusion, facture, detail_facture, paiement
+- [x] Vue v_resume_paiement_societe
+- [x] Données initiales (Vaniala, Lewis)
+- [ ] **Ajouter colonne `montant_paye` à `detail_facture`**
 
 ## Backend Java
-- [ ] Créer le package `model/diffusions/`
-- [ ] Créer les 7 entités JPA
-- [ ] Créer les DTOs
-- [ ] Créer le package `repository/diffusions/`
-- [ ] Créer les 7 repositories avec requêtes JPQL
-- [ ] Créer le package `service/diffusions/`
-- [ ] Créer `DiffusionService` avec méthodes de calcul CA
-- [ ] Créer `FactureService` pour gestion factures
-- [ ] Créer le package `controller/diffusions/`
-- [ ] Créer `DiffusionController`
+- [x] Entités JPA (SocieteDiffuseur, Facture, DetailFacture, Paiement, TarifDiffusion)
+- [x] Repositories avec requêtes
+- [x] DiffusionService (CA, paiements)
+- [ ] **Ajouter méthode creerCommande()**
+- [ ] **Implémenter répartition prorata dans ajouterPaiement()**
 
 ## Frontend
-- [ ] Créer le dossier `templates/views/diffusions/`
-- [ ] Créer `ca.html` (page CA diffusions)
-- [ ] Ajouter le lien dans `sidebar.html`
-
-## Tests
-- [ ] Vérifier que le CA décembre 2025 = 12 000 000 Ar
-- [ ] Vérifier le filtre par société
-- [ ] Vérifier le filtre par dates
+- [x] ca.html (page CA)
+- [x] paiements.html (gestion paiements)
+- [ ] **commande.html (nouvelle commande)**
+- [x] Lien sidebar "Diffusions Pub"
