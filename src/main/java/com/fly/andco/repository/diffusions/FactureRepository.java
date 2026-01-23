@@ -21,44 +21,39 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
     @Query("SELECT f FROM Facture f WHERE f.statut != 'annulée' ORDER BY f.dateFacture DESC")
     List<Facture> findAllActiveOrderByDate();
     
-    // Calcul du CA avec filtres optionnels
-    @Query("SELECT COALESCE(SUM(f.montantHt), 0) FROM Facture f " +
-           "WHERE f.statut != 'annulée' " +
-           "AND (:idSociete IS NULL OR f.societeDiffuseur.idSocieteDiffuseur = :idSociete) " +
-           "AND (:dateDebut IS NULL OR f.dateDebutPeriode >= :dateDebut) " +
-           "AND (:dateFin IS NULL OR f.dateFinPeriode <= :dateFin)")
-    BigDecimal calculerCA(
-            @Param("idSociete") Long idSociete,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
+    // Factures d'une société
+    @Query("SELECT f FROM Facture f WHERE f.societeDiffuseur.idSocieteDiffuseur = :idSociete AND f.statut != 'annulée' ORDER BY f.dateFacture DESC")
+    List<Facture> findBySociete(@Param("idSociete") Long idSociete);
     
-    // CA par société pour une période
-    @Query("SELECT f.societeDiffuseur.idSocieteDiffuseur, " +
-           "f.societeDiffuseur.nom, " +
-           "COALESCE(SUM(f.montantHt), 0) " +
-           "FROM Facture f " +
-           "WHERE f.statut != 'annulée' " +
-           "AND (:dateDebut IS NULL OR f.dateDebutPeriode >= :dateDebut) " +
-           "AND (:dateFin IS NULL OR f.dateFinPeriode <= :dateFin) " +
-           "GROUP BY f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom " +
-           "ORDER BY f.societeDiffuseur.nom")
-    List<Object[]> calculerCAParSociete(
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
+    // CA total sans filtre
+    @Query("SELECT COALESCE(SUM(f.montant), 0) FROM Facture f WHERE f.statut != 'annulée'")
+    BigDecimal calculerCATous();
     
-    // Factures par période
-    @Query("SELECT f FROM Facture f " +
-           "WHERE f.statut != 'annulée' " +
-           "AND (:idSociete IS NULL OR f.societeDiffuseur.idSocieteDiffuseur = :idSociete) " +
-           "AND (:dateDebut IS NULL OR f.dateDebutPeriode >= :dateDebut) " +
-           "AND (:dateFin IS NULL OR f.dateFinPeriode <= :dateFin) " +
-           "ORDER BY f.dateFacture DESC")
-    List<Facture> findByFilters(
-            @Param("idSociete") Long idSociete,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
+    // CA par société
+    @Query("SELECT COALESCE(SUM(f.montant), 0) FROM Facture f WHERE f.statut != 'annulée' AND f.societeDiffuseur.idSocieteDiffuseur = :idSociete")
+    BigDecimal calculerCABySociete(@Param("idSociete") Long idSociete);
+    
+    // CA par période
+    @Query("SELECT COALESCE(SUM(f.montant), 0) FROM Facture f WHERE f.statut != 'annulée' AND f.dateDebutPeriode >= :dateDebut AND f.dateFinPeriode <= :dateFin")
+    BigDecimal calculerCAByPeriode(@Param("dateDebut") LocalDate dateDebut, @Param("dateFin") LocalDate dateFin);
+    
+    // CA par société et période
+    @Query("SELECT COALESCE(SUM(f.montant), 0) FROM Facture f WHERE f.statut != 'annulée' AND f.societeDiffuseur.idSocieteDiffuseur = :idSociete AND f.dateDebutPeriode >= :dateDebut AND f.dateFinPeriode <= :dateFin")
+    BigDecimal calculerCABySocieteAndPeriode(@Param("idSociete") Long idSociete, @Param("dateDebut") LocalDate dateDebut, @Param("dateFin") LocalDate dateFin);
+    
+    // CA par société (groupé) - sans filtre
+    @Query("SELECT f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom, COALESCE(SUM(f.montant), 0) FROM Facture f WHERE f.statut != 'annulée' GROUP BY f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom ORDER BY f.societeDiffuseur.nom")
+    List<Object[]> calculerCAParSocieteTous();
+    
+    // CA par société (groupé) - par période
+    @Query("SELECT f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom, COALESCE(SUM(f.montant), 0) FROM Facture f WHERE f.statut != 'annulée' AND f.dateDebutPeriode >= :dateDebut AND f.dateFinPeriode <= :dateFin GROUP BY f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom ORDER BY f.societeDiffuseur.nom")
+    List<Object[]> calculerCAParSocieteByPeriode(@Param("dateDebut") LocalDate dateDebut, @Param("dateFin") LocalDate dateFin);
     
     // Prochain numéro de facture
     @Query("SELECT MAX(f.numeroFacture) FROM Facture f WHERE f.numeroFacture LIKE CONCAT('FAC-', :annee, '-%')")
     String findLastNumeroFactureForYear(@Param("annee") String annee);
+    
+    // Factures avec reste à payer pour une société
+    @Query("SELECT f FROM Facture f WHERE f.societeDiffuseur.idSocieteDiffuseur = :idSociete AND f.statut IN ('émise', 'partiellement_payée') ORDER BY f.dateFacture DESC")
+    List<Facture> findFacturesAvecResteAPayer(@Param("idSociete") Long idSociete);
 }

@@ -14,30 +14,27 @@ public interface DetailFactureRepository extends JpaRepository<DetailFacture, Lo
     
     List<DetailFacture> findByFactureIdFacture(Long idFacture);
     
-    // Total des diffusions avec filtres optionnels
-    @Query("SELECT COALESCE(SUM(d.nombreDiffusions), 0) FROM DetailFacture d " +
-           "JOIN d.facture f " +
-           "WHERE f.statut != 'annulée' " +
-           "AND (:idSociete IS NULL OR f.societeDiffuseur.idSocieteDiffuseur = :idSociete) " +
-           "AND (:dateDebut IS NULL OR f.dateDebutPeriode >= :dateDebut) " +
-           "AND (:dateFin IS NULL OR f.dateFinPeriode <= :dateFin)")
-    Integer compterDiffusions(
-            @Param("idSociete") Long idSociete,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
+    // Total des diffusions sans filtre
+    @Query("SELECT COALESCE(SUM(d.nombreDiffusions), 0) FROM DetailFacture d JOIN d.facture f WHERE f.statut != 'annulée'")
+    Integer compterDiffusionsTous();
     
-    // Diffusions par société pour une période
-    @Query("SELECT f.societeDiffuseur.idSocieteDiffuseur, " +
-           "f.societeDiffuseur.nom, " +
-           "COALESCE(SUM(d.nombreDiffusions), 0) " +
-           "FROM DetailFacture d " +
-           "JOIN d.facture f " +
-           "WHERE f.statut != 'annulée' " +
-           "AND (:dateDebut IS NULL OR f.dateDebutPeriode >= :dateDebut) " +
-           "AND (:dateFin IS NULL OR f.dateFinPeriode <= :dateFin) " +
-           "GROUP BY f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom " +
-           "ORDER BY f.societeDiffuseur.nom")
-    List<Object[]> compterDiffusionsParSociete(
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
+    // Total des diffusions par société
+    @Query("SELECT COALESCE(SUM(d.nombreDiffusions), 0) FROM DetailFacture d JOIN d.facture f WHERE f.statut != 'annulée' AND f.societeDiffuseur.idSocieteDiffuseur = :idSociete")
+    Integer compterDiffusionsBySociete(@Param("idSociete") Long idSociete);
+    
+    // Total des diffusions par période
+    @Query("SELECT COALESCE(SUM(d.nombreDiffusions), 0) FROM DetailFacture d JOIN d.facture f WHERE f.statut != 'annulée' AND f.dateDebutPeriode >= :dateDebut AND f.dateFinPeriode <= :dateFin")
+    Integer compterDiffusionsByPeriode(@Param("dateDebut") LocalDate dateDebut, @Param("dateFin") LocalDate dateFin);
+    
+    // Total des diffusions par société et période
+    @Query("SELECT COALESCE(SUM(d.nombreDiffusions), 0) FROM DetailFacture d JOIN d.facture f WHERE f.statut != 'annulée' AND f.societeDiffuseur.idSocieteDiffuseur = :idSociete AND f.dateDebutPeriode >= :dateDebut AND f.dateFinPeriode <= :dateFin")
+    Integer compterDiffusionsBySocieteAndPeriode(@Param("idSociete") Long idSociete, @Param("dateDebut") LocalDate dateDebut, @Param("dateFin") LocalDate dateFin);
+    
+    // Diffusions par société (groupé) - sans filtre
+    @Query("SELECT f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom, COALESCE(SUM(d.nombreDiffusions), 0) FROM DetailFacture d JOIN d.facture f WHERE f.statut != 'annulée' GROUP BY f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom ORDER BY f.societeDiffuseur.nom")
+    List<Object[]> compterDiffusionsParSocieteTous();
+    
+    // Diffusions par société (groupé) - par période
+    @Query("SELECT f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom, COALESCE(SUM(d.nombreDiffusions), 0) FROM DetailFacture d JOIN d.facture f WHERE f.statut != 'annulée' AND f.dateDebutPeriode >= :dateDebut AND f.dateFinPeriode <= :dateFin GROUP BY f.societeDiffuseur.idSocieteDiffuseur, f.societeDiffuseur.nom ORDER BY f.societeDiffuseur.nom")
+    List<Object[]> compterDiffusionsParSocieteByPeriode(@Param("dateDebut") LocalDate dateDebut, @Param("dateFin") LocalDate dateFin);
 }

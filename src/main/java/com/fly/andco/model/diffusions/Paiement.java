@@ -18,10 +18,6 @@ public class Paiement {
     @JoinColumn(name = "id_facture", nullable = false)
     private Facture facture;
 
-    @ManyToOne
-    @JoinColumn(name = "id_echeance")
-    private Echeance echeance;
-
     @Column(name = "date_paiement", nullable = false)
     private LocalDate datePaiement;
 
@@ -52,6 +48,12 @@ public class Paiement {
         this.montantPaye = montantPaye;
         this.modePaiement = modePaiement;
     }
+    
+    // Méthode utilitaire
+    public String getMontantPayeFormate() {
+        if (montantPaye == null) return "0 Ar";
+        return String.format("%,.0f Ar", montantPaye);
+    }
 
     // Getters & Setters
     public Long getIdPaiement() {
@@ -68,14 +70,6 @@ public class Paiement {
 
     public void setFacture(Facture facture) {
         this.facture = facture;
-    }
-
-    public Echeance getEcheance() {
-        return echeance;
-    }
-
-    public void setEcheance(Echeance echeance) {
-        this.echeance = echeance;
     }
 
     public LocalDate getDatePaiement() {

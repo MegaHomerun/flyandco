@@ -32,17 +32,8 @@ public class Facture {
     @Column(name = "date_fin_periode", nullable = false)
     private LocalDate dateFinPeriode;
 
-    @Column(name = "montant_ht", nullable = false, precision = 12, scale = 2)
-    private BigDecimal montantHt;
-
-    @Column(name = "taux_tva", precision = 5, scale = 2)
-    private BigDecimal tauxTva = BigDecimal.ZERO;
-
-    @Column(name = "montant_tva", precision = 12, scale = 2)
-    private BigDecimal montantTva = BigDecimal.ZERO;
-
-    @Column(name = "montant_ttc", nullable = false, precision = 12, scale = 2)
-    private BigDecimal montantTtc;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal montant;
 
     @Column(length = 30)
     private String statut = "émise";
@@ -65,25 +56,17 @@ public class Facture {
     }
 
     public Facture(String numeroFacture, SocieteDiffuseur societeDiffuseur, LocalDate dateFacture,
-                   LocalDate dateDebutPeriode, LocalDate dateFinPeriode, BigDecimal montantHt) {
+                   LocalDate dateDebutPeriode, LocalDate dateFinPeriode, BigDecimal montant) {
         this();
         this.numeroFacture = numeroFacture;
         this.societeDiffuseur = societeDiffuseur;
         this.dateFacture = dateFacture;
         this.dateDebutPeriode = dateDebutPeriode;
         this.dateFinPeriode = dateFinPeriode;
-        this.montantHt = montantHt;
-        this.montantTtc = montantHt; // Sans TVA par défaut
+        this.montant = montant;
     }
 
     // Méthodes utilitaires
-    public void calculerMontants() {
-        if (this.tauxTva != null && this.montantHt != null) {
-            this.montantTva = this.montantHt.multiply(this.tauxTva).divide(BigDecimal.valueOf(100));
-            this.montantTtc = this.montantHt.add(this.montantTva);
-        }
-    }
-
     public BigDecimal getMontantPaye() {
         return paiements.stream()
                 .map(Paiement::getMontantPaye)
@@ -91,13 +74,26 @@ public class Facture {
     }
 
     public BigDecimal getMontantRestant() {
-        return montantTtc.subtract(getMontantPaye());
+        return montant.subtract(getMontantPaye());
     }
 
     public int getTotalDiffusions() {
         return details.stream()
                 .mapToInt(DetailFacture::getNombreDiffusions)
                 .sum();
+    }
+    
+    public String getMontantFormate() {
+        if (montant == null) return "0 Ar";
+        return String.format("%,.0f Ar", montant);
+    }
+    
+    public String getMontantPayeFormate() {
+        return String.format("%,.0f Ar", getMontantPaye());
+    }
+    
+    public String getMontantRestantFormate() {
+        return String.format("%,.0f Ar", getMontantRestant());
     }
 
     // Getters & Setters
@@ -149,36 +145,12 @@ public class Facture {
         this.dateFinPeriode = dateFinPeriode;
     }
 
-    public BigDecimal getMontantHt() {
-        return montantHt;
+    public BigDecimal getMontant() {
+        return montant;
     }
 
-    public void setMontantHt(BigDecimal montantHt) {
-        this.montantHt = montantHt;
-    }
-
-    public BigDecimal getTauxTva() {
-        return tauxTva;
-    }
-
-    public void setTauxTva(BigDecimal tauxTva) {
-        this.tauxTva = tauxTva;
-    }
-
-    public BigDecimal getMontantTva() {
-        return montantTva;
-    }
-
-    public void setMontantTva(BigDecimal montantTva) {
-        this.montantTva = montantTva;
-    }
-
-    public BigDecimal getMontantTtc() {
-        return montantTtc;
-    }
-
-    public void setMontantTtc(BigDecimal montantTtc) {
-        this.montantTtc = montantTtc;
+    public void setMontant(BigDecimal montant) {
+        this.montant = montant;
     }
 
     public String getStatut() {

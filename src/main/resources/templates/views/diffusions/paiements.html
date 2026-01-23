@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiements Diffusions - FlyAndCo</title>
+    
+    <link rel="shortcut icon" href="./assets/compiled/svg/favicon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="/assets/compiled/css/app.css">
+    <link rel="stylesheet" href="/assets/compiled/css/app-dark.css">
+    <style>
+        .stat-card {
+            border-left: 4px solid;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-card.primary { border-left-color: #435ebe; }
+        .stat-card.success { border-left-color: #198754; }
+        .stat-card.warning { border-left-color: #ffc107; }
+        .stat-card.danger { border-left-color: #dc3545; }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+        .filter-card {
+            background-color: #f8f9fa;
+        }
+        .table-factures th {
+            background-color: #435ebe;
+            color: white;
+        }
+        .badge-statut-emise { background-color: #6c757d; }
+        .badge-statut-partielle { background-color: #ffc107; color: #000; }
+        .badge-statut-payee { background-color: #198754; }
+    </style>
+</head>
+
+<body>
+    <script src="/assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div th:replace="fragments/sidebar :: sidebar"></div>
+
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            
+            <div class="page-heading">
+                <div class="page-title">
+                    <div class="row">
+                        <div class="col-12 col-md-6 order-md-1 order-last">
+                            <h3><i class="bi bi-credit-card"></i> Paiements - Diffusions Publicitaires</h3>
+                            <p class="text-subtitle text-muted">Gestion des paiements et suivi du reste à payer</p>
+                        </div>
+                        <div class="col-12 col-md-6 order-md-2 order-first">
+                            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/home">Accueil</a></li>
+                                    <li class="breadcrumb-item"><a href="/diffusions/ca">Diffusions</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">Paiements</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alertes -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${success}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Sélection de la société -->
+                <section class="section">
+                    <div class="card filter-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-building"></i> Sélectionner une société
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form th:action="@{/diffusions/paiements}" method="get">
+                                <div class="row align-items-end">
+                                    <div class="col-md-8">
+                                        <div class="form-group mb-3">
+                                            <label for="idSociete" class="form-label">Société</label>
+                                            <select class="form-select" id="idSociete" name="idSociete" required>
+                                                <option value="">-- Sélectionner une société --</option>
+                                                <option th:each="societe : ${societes}" 
+                                                        th:value="${societe.idSocieteDiffuseur}"
+                                                        th:text="${societe.nom}"
+                                                        th:selected="${societe.idSocieteDiffuseur == idSocieteSelectionnee}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-3">
+                                            <button type="submit" class="btn btn-primary w-100">
+                                                <i class="bi bi-search"></i> Afficher
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Résultats -->
+                <section class="section" th:if="${resultatsAffiches}">
+                    <!-- Résumé -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card stat-card primary">
+                                <div class="card-body py-3">
+                                    <p class="stat-label mb-1">Total Diffusions</p>
+                                    <p class="stat-value mb-0" th:text="${resume.totalDiffusions}">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card secondary">
+                                <div class="card-body py-3">
+                                    <p class="stat-label mb-1">Total Facturé</p>
+                                    <p class="stat-value mb-0" th:text="${resume.totalFactureFormate}">0 Ar</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card success">
+                                <div class="card-body py-3">
+                                    <p class="stat-label mb-1">Total Payé</p>
+                                    <p class="stat-value mb-0 text-success" th:text="${resume.totalPayeFormate}">0 Ar</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card danger">
+                                <div class="card-body py-3">
+                                    <p class="stat-label mb-1">Reste à Payer</p>
+                                    <p class="stat-value mb-0 text-danger" th:text="${resume.resteAPayerFormate}">0 Ar</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire d'ajout de paiement -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-plus-circle"></i> Enregistrer un paiement
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form th:action="@{/diffusions/paiements/ajouter}" method="post">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group mb-3">
+                                            <label for="idFacture" class="form-label">Facture</label>
+                                            <select class="form-select" id="idFacture" name="idFacture" required>
+                                                <option value="">-- Sélectionner --</option>
+                                                <option th:each="facture : ${factures}" 
+                                                        th:value="${facture.idFacture}"
+                                                        th:text="${facture.numeroFacture + ' - Reste: ' + facture.montantRestantFormate}"
+                                                        th:if="${facture.statut != 'payée'}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group mb-3">
+                                            <label for="datePaiement" class="form-label">Date</label>
+                                            <input type="date" class="form-control" id="datePaiement" name="datePaiement" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group mb-3">
+                                            <label for="montant" class="form-label">Montant (Ar)</label>
+                                            <input type="number" class="form-control" id="montant" name="montant" 
+                                                   step="1" min="1" required placeholder="Ex: 1000000">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group mb-3">
+                                            <label for="modePaiement" class="form-label">Mode</label>
+                                            <select class="form-select" id="modePaiement" name="modePaiement">
+                                                <option value="">-- Mode --</option>
+                                                <option value="virement">Virement</option>
+                                                <option value="espèces">Espèces</option>
+                                                <option value="chèque">Chèque</option>
+                                                <option value="mobile_money">Mobile Money</option>
+                                                <option value="carte">Carte</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group mb-3">
+                                            <label for="reference" class="form-label">Référence</label>
+                                            <input type="text" class="form-control" id="reference" name="reference" 
+                                                   placeholder="Ex: VIR-001">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="submit" class="btn btn-success w-100">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Liste des factures -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-receipt"></i> Factures de <span th:text="${societeSelectionnee.nom}"></span>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-factures">
+                                    <thead>
+                                        <tr>
+                                            <th>N° Facture</th>
+                                            <th>Période</th>
+                                            <th class="text-center">Diffusions</th>
+                                            <th class="text-end">Montant</th>
+                                            <th class="text-end">Payé</th>
+                                            <th class="text-end">Reste</th>
+                                            <th class="text-center">Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="facture : ${factures}">
+                                            <td><strong th:text="${facture.numeroFacture}"></strong></td>
+                                            <td>
+                                                <small th:text="${#temporals.format(facture.dateDebutPeriode, 'dd/MM/yyyy')}"></small>
+                                                <small> - </small>
+                                                <small th:text="${#temporals.format(facture.dateFinPeriode, 'dd/MM/yyyy')}"></small>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-primary" th:text="${facture.totalDiffusions}"></span>
+                                            </td>
+                                            <td class="text-end" th:text="${facture.montantFormate}"></td>
+                                            <td class="text-end text-success" th:text="${facture.montantPayeFormate}"></td>
+                                            <td class="text-end">
+                                                <strong th:class="${facture.montantRestant.compareTo(T(java.math.BigDecimal).ZERO) > 0 ? 'text-danger' : 'text-success'}"
+                                                        th:text="${facture.montantRestantFormate}"></strong>
+                                            </td>
+                                            <td class="text-center">
+                                                <span th:if="${facture.statut == 'émise'}" class="badge badge-statut-emise">Émise</span>
+                                                <span th:if="${facture.statut == 'partiellement_payée'}" class="badge badge-statut-partielle">Partielle</span>
+                                                <span th:if="${facture.statut == 'payée'}" class="badge badge-statut-payee">Payée</span>
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(factures)}">
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                <i class="bi bi-inbox fs-1"></i>
+                                                <p class="mb-0 mt-2">Aucune facture pour cette société</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historique des paiements -->
+                    <div class="card mt-4" th:if="${not #lists.isEmpty(factures)}">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-clock-history"></i> Historique des paiements
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Facture</th>
+                                            <th class="text-end">Montant</th>
+                                            <th>Mode</th>
+                                            <th>Référence</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <th:block th:each="facture : ${factures}">
+                                            <tr th:each="paiement : ${facture.paiements}">
+                                                <td th:text="${#temporals.format(paiement.datePaiement, 'dd/MM/yyyy')}"></td>
+                                                <td th:text="${facture.numeroFacture}"></td>
+                                                <td class="text-end text-success">
+                                                    <strong th:text="${paiement.montantPayeFormate}"></strong>
+                                                </td>
+                                                <td th:text="${paiement.modePaiement}"></td>
+                                                <td th:text="${paiement.referencePaiement}"></td>
+                                            </tr>
+                                        </th:block>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Message initial -->
+                <section class="section" th:unless="${resultatsAffiches}">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-building fs-1 text-muted"></i>
+                            <h5 class="mt-3">Sélectionnez une société</h5>
+                            <p class="text-muted">Choisissez une société pour afficher ses factures et gérer les paiements.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/static/js/components/dark.js"></script>
+    <script src="/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="/assets/compiled/js/app.js"></script>
+</body>
+
+</html>
