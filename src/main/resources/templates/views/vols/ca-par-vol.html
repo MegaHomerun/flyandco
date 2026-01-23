@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA par Vol - FlyAndCo</title>
+    
+    <link rel="shortcut icon" href="./assets/compiled/svg/favicon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="/assets/compiled/css/app.css">
+    <link rel="stylesheet" href="/assets/compiled/css/app-dark.css">
+    <style>
+        .stat-card {
+            border-left: 4px solid;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-card.primary {
+            border-left-color: #435ebe;
+        }
+        .stat-card.success {
+            border-left-color: #198754;
+        }
+        .stat-card.warning {
+            border-left-color: #ffc107;
+        }
+        .stat-card.danger {
+            border-left-color: #dc3545;
+        }
+        .stat-card.info {
+            border-left-color: #0dcaf0;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+        .filter-card {
+            background-color: #f8f9fa;
+        }
+        .table-ca th {
+            background-color: #435ebe;
+            color: white;
+            vertical-align: middle;
+            text-align: center;
+        }
+        .table-ca td {
+            vertical-align: middle;
+        }
+        .montant {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+        .montant-billets {
+            color: #198754;
+        }
+        .montant-diffusion {
+            color: #0d6efd;
+        }
+        .montant-restant {
+            color: #dc3545;
+        }
+        .montant-total {
+            color: #435ebe;
+            font-weight: bold;
+        }
+        .table-ca tfoot {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+        .table-ca tfoot td {
+            border-top: 2px solid #435ebe;
+        }
+        .badge-vol {
+            font-size: 0.9rem;
+        }
+        .th-group {
+            background-color: #6c757d !important;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="/assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div th:replace="fragments/sidebar :: sidebar"></div>
+
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            
+            <div class="page-heading">
+                <div class="page-title">
+                    <div class="row">
+                        <div class="col-12 col-md-6 order-md-1 order-last">
+                            <h3><i class="bi bi-graph-up"></i> Chiffre d'Affaires par Vol</h3>
+                            <p class="text-subtitle text-muted">CA généré par les billets et diffusions publicitaires</p>
+                        </div>
+                        <div class="col-12 col-md-6 order-md-2 order-first">
+                            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="/home">Accueil</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">CA par Vol</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire de Filtres -->
+                <section class="section">
+                    <div class="card filter-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-funnel"></i> Filtres
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form th:action="@{/ca/par-vol}" method="get">
+                                <div class="row align-items-end">
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-3">
+                                            <label for="dateDebut" class="form-label">Date début</label>
+                                            <input type="date" class="form-control" id="dateDebut" name="dateDebut"
+                                                   th:value="${dateDebut}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-3">
+                                            <label for="dateFin" class="form-label">Date fin</label>
+                                            <input type="date" class="form-control" id="dateFin" name="dateFin"
+                                                   th:value="${dateFin}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-3">
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary flex-grow-1">
+                                                    <i class="bi bi-search"></i> Filtrer
+                                                </button>
+                                                <a href="/ca/par-vol" class="btn btn-outline-secondary">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Cartes Statistiques -->
+                <section class="section">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card stat-card success">
+                                <div class="card-body py-3">
+                                    <p class="stat-label mb-1"><i class="bi bi-ticket-perforated"></i> CA Billets</p>
+                                    <p class="stat-value mb-0" th:text="${totaux.montantBilletsFormate}">0 Ar</p>
+                                    <small class="text-muted" th:text="${totaux.nombrePassagers} + ' passagers'">0 passagers</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card info">
+                                <div class="card-body py-3">
+                                    <p class="stat-label mb-1"><i class="bi bi-broadcast"></i> Diffusions Facturées</p>
+                                    <p class="stat-value mb-0" th:text="${totaux.montantDiffusionsFactureFormate}">0 Ar</p>
+                                    <small class="text-muted" th:text="${totaux.nombreDiffusions} + ' diffusions'">0 diffusions</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card danger">
+                                <div class="card-body py-3">
+                                    <p class="stat-label mb-1"><i class="bi bi-exclamation-triangle"></i> Reste à Payer Diffusions</p>
+                                    <p class="stat-value mb-0" th:text="${totaux.montantDiffusionsRestantFormate}">0 Ar</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card primary">
+                                <div class="card-body py-3">
+                                    <p class="stat-label mb-1"><i class="bi bi-cash-stack"></i> CA Total Encaissé</p>
+                                    <p class="stat-value mb-0" th:text="${totaux.caTotalFormate}">0 Ar</p>
+                                    <small class="text-muted">Billets + Diffusions payées</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tableau CA par Vol -->
+                <section class="section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-table"></i> Détail par Vol Programmé
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover table-ca">
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2">Aéroport Départ</th>
+                                            <th rowspan="2">Aéroport Arrivée</th>
+                                            <th rowspan="2">Avion</th>
+                                            <th rowspan="2">Date Départ</th>
+                                            <th rowspan="2">Heure Départ</th>
+                                            <th rowspan="2" class="montant">Montant Billets</th>
+                                            <th colspan="3" class="th-group">Diffusion Publicitaire</th>
+                                            <th rowspan="2" class="montant">CA Total</th>
+                                        </tr>
+                                        <tr>
+                                            <th class="montant th-group">Total à Payer</th>
+                                            <th class="montant th-group">Reste à Payer</th>
+                                            <th class="th-group">Nb Diff.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="ca : ${listeCA}">
+                                            <td>
+                                                <span class="badge bg-secondary badge-vol" th:text="${ca.codeDepart}">TNR</span>
+                                                <small th:text="${ca.aeroportDepart}" class="text-muted d-block">Antananarivo</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary badge-vol" th:text="${ca.codeArrivee}">NOS</span>
+                                                <small th:text="${ca.aeroportArrivee}" class="text-muted d-block">Nosy Be</small>
+                                            </td>
+                                            <td>
+                                                <span th:text="${ca.avionModele}">ATR 72-600</span>
+                                                <small th:text="${ca.avionImmatriculation}" class="text-muted d-block">5R-MJA</small>
+                                            </td>
+                                            <td th:text="${ca.dateDepartFormatee}">20/01/2026</td>
+                                            <td th:text="${ca.heureDepartFormatee}">10h00</td>
+                                            <td class="montant montant-billets" th:text="${ca.montantBilletsFormate}">32 000 000 Ar</td>
+                                            <td class="montant montant-diffusion" th:text="${ca.montantDiffusionsFactureFormate}">800 000 Ar</td>
+                                            <td class="montant montant-restant" th:text="${ca.montantDiffusionsRestantFormate}">0 Ar</td>
+                                            <td class="text-center" th:text="${ca.nombreDiffusions}">2</td>
+                                            <td class="montant montant-total" th:text="${ca.caTotalFormate}">32 800 000 Ar</td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(listeCA)}">
+                                            <td colspan="10" class="text-center text-muted py-4">
+                                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                                Aucun vol programmé trouvé
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot th:if="${!#lists.isEmpty(listeCA)}">
+                                        <tr>
+                                            <td colspan="5" class="text-end"><strong>TOTAUX</strong></td>
+                                            <td class="montant montant-billets" th:text="${totaux.montantBilletsFormate}">0 Ar</td>
+                                            <td class="montant montant-diffusion" th:text="${totaux.montantDiffusionsFactureFormate}">0 Ar</td>
+                                            <td class="montant montant-restant" th:text="${totaux.montantDiffusionsRestantFormate}">0 Ar</td>
+                                            <td class="text-center" th:text="${totaux.nombreDiffusions}">0</td>
+                                            <td class="montant montant-total" th:text="${totaux.caTotalFormate}">0 Ar</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/static/js/components/dark.js"></script>
+    <script src="/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="/assets/compiled/js/app.js"></script>
+</body>
+
+</html>
