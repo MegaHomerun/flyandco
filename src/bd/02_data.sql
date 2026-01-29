@@ -1,7 +1,7 @@
 -- ============================================================
 -- Script d'insertion des données
 -- FlyAndCo - Système de gestion de compagnie aérienne
--- Date: 2026-01-16
+-- Date: 2026-01-29
 -- ============================================================
 
 \c pg10;
@@ -267,3 +267,19 @@ INSERT INTO tarif_categorie (id_vol, id_type_place, id_categorie_passager, prix,
 (8, 3, 2, 300000, NULL, NULL), (8, 3, 3, NULL, 10, NULL)
 ON CONFLICT (id_vol, id_type_place, id_categorie_passager) 
 DO UPDATE SET prix = EXCLUDED.prix, pourcentage = EXCLUDED.pourcentage, frais_reduction = EXCLUDED.frais_reduction;
+
+-- ============================================================
+-- INSERTION: SOCIÉTÉS DIFFUSEURS
+-- ============================================================
+INSERT INTO societe_diffuseur (nom, email, telephone, adresse) VALUES
+('Vaniala', 'contact@vaniala.mg', '+261 34 00 000 01', 'Antananarivo, Madagascar'),
+('Lewis', 'info@lewis.mg', '+261 34 00 000 02', 'Antananarivo, Madagascar'),
+('Socobis', 'contact@socobis.mg', '+261 34 00 000 03', 'Antananarivo, Madagascar'),
+('Jejoo', 'info@jejoo.mg', '+261 34 00 000 04', 'Antananarivo, Madagascar');
+
+-- ============================================================
+-- INSERTION: TARIF DIFFUSION PAR DÉFAUT
+-- ============================================================
+-- Tarif par défaut: 400 000 Ar / diffusion
+INSERT INTO tarif_diffusion (id_societe_diffuseur, id_vol, id_type_place, prix_unitaire, actif) VALUES
+(NULL, NULL, NULL, 400000, TRUE);
