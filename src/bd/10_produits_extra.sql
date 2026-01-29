@@ -343,3 +343,64 @@ BEGIN
     
     -- TOTAL: 50 + 50 + 50 = 150 tablettes | 750 000 Ar
 END $$;
+
+-- ============================================================
+-- DONNÉES DE TEST: Factures produits Janvier 2026
+-- ============================================================
+DO $$
+DECLARE
+    v_id_facture INT;
+    v_id_vente_1 INT;
+    v_id_vente_2 INT;
+    v_id_vente_3 INT;
+    v_id_vp_1 INT;
+    v_id_vp_2 INT;
+    v_id_vp_3 INT;
+    v_id_produit INT;
+BEGIN
+    -- Récupérer les IDs des ventes
+    SELECT id_produit_extra INTO v_id_produit FROM produit_extra WHERE code_produit = 'CHOCO-001';
+    
+    SELECT vp.id_vol_programme INTO v_id_vp_1
+    FROM vol_programme vp
+    JOIN avion a ON vp.id_avion = a.id_avion
+    WHERE a.numero_immatriculation = 'TR-045'
+    AND DATE(vp.date_heure_depart) = '2026-01-20'
+    AND EXTRACT(HOUR FROM vp.date_heure_depart) = 10;
+    
+    SELECT vp.id_vol_programme INTO v_id_vp_2
+    FROM vol_programme vp
+    JOIN avion a ON vp.id_avion = a.id_avion
+    WHERE a.numero_immatriculation = 'TR-045'
+    AND DATE(vp.date_heure_depart) = '2026-01-21'
+    AND EXTRACT(HOUR FROM vp.date_heure_depart) = 10;
+    
+    SELECT vp.id_vol_programme INTO v_id_vp_3
+    FROM vol_programme vp
+    JOIN avion a ON vp.id_avion = a.id_avion
+    WHERE a.numero_immatriculation = 'TR-045'
+    AND DATE(vp.date_heure_depart) = '2026-01-21'
+    AND EXTRACT(HOUR FROM vp.date_heure_depart) = 15;
+    
+    SELECT id_vente_produit INTO v_id_vente_1 FROM vente_produit WHERE id_vol_programme = v_id_vp_1;
+    SELECT id_vente_produit INTO v_id_vente_2 FROM vente_produit WHERE id_vol_programme = v_id_vp_2;
+    SELECT id_vente_produit INTO v_id_vente_3 FROM vente_produit WHERE id_vol_programme = v_id_vp_3;
+    
+    -- Facture globale Janvier 2026: 750 000 Ar (150 tablettes)
+    IF NOT EXISTS (SELECT 1 FROM facture_produit WHERE numero_facture = 'FPROD-2026-01') THEN
+        INSERT INTO facture_produit (numero_facture, date_facture, date_debut_periode, date_fin_periode, montant, statut, notes)
+        VALUES ('FPROD-2026-01', '2026-01-25', '2026-01-20', '2026-01-21', 750000, 'partiellement_payée', 'Facture produits janvier 2026')
+        RETURNING id_facture_produit INTO v_id_facture;
+        
+        -- Détails facture: 3 lignes
+        INSERT INTO detail_facture_produit (id_facture_produit, id_vente_produit, id_vol_programme, id_produit_extra, description, quantite, prix_unitaire, montant_ligne, montant_paye)
+        VALUES 
+            (v_id_facture, v_id_vente_1, v_id_vp_1, v_id_produit, 'Vente chocolat vol 20/01 10h TNR-NOS', 50, 5000, 250000, 100000),
+            (v_id_facture, v_id_vente_2, v_id_vp_2, v_id_produit, 'Vente chocolat vol 21/01 10h TNR-NOS', 50, 5000, 250000, 100000),
+            (v_id_facture, v_id_vente_3, v_id_vp_3, v_id_produit, 'Vente chocolat vol 21/01 15h TNR-NOS', 50, 5000, 250000, 100000);
+        
+        -- Paiement partiel: 300 000 Ar sur 750 000 Ar (40%)
+        INSERT INTO paiement_produit (id_facture_produit, date_paiement, montant_paye, mode_paiement, reference_paiement, notes)
+        VALUES (v_id_facture, '2026-01-27', 300000, 'virement', 'VIR-PROD-2026-001', 'Paiement partiel facture produits janvier');
+    END IF;
+END $$;
