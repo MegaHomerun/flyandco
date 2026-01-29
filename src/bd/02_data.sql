@@ -79,8 +79,8 @@ INSERT INTO Client (nom, prenom, email, telephone) VALUES
 -- ============================================================
 -- INSERTION: RÉSERVATIONS
 -- ============================================================
-INSERT INTO Reservation (id_client, id_vol_programme, nombre_places, statut) VALUES
--- (1, 1, 2, 'confirmée');
+-- INSERT INTO Reservation (id_client, id_vol_programme, nombre_places, statut) VALUES
+-- -- (1, 1, 2, 'confirmée');
 
 -- ============================================================
 -- INSERTION: TYPES DE PLACES
@@ -386,13 +386,17 @@ BEGIN
             VALUES (v_id_reservation, 2, 1, 800000);
         END LOOP;
 
-        -- Vol 20/01 10h: Pub Vaniala 1 (400 000 Ar) - NON PAYÉE
+        -- Vol 20/01 10h: Pub Vaniala 1 (400 000 Ar) - PAIEMENT 200 000 Ar
         INSERT INTO facture (numero_facture, id_societe_diffuseur, date_facture, date_debut_periode, date_fin_periode, montant, statut)
-        VALUES ('FAC-2026-V001', v_id_societe_vaniala, '2026-01-20', '2026-01-20', '2026-01-20', 400000, 'émise')
+        VALUES ('FAC-2026-V001', v_id_societe_vaniala, '2026-01-20', '2026-01-20', '2026-01-20', 400000, 'partiellement_payée')
         RETURNING id_facture INTO v_id_facture;
         
         INSERT INTO detail_facture (id_facture, id_vol_programme, description, nombre_diffusions, prix_unitaire, montant_ligne, montant_paye)
-        VALUES (v_id_facture, v_id_vp_1, 'Diffusion pub vol TNR-NOS 20/01 10h', 1, 400000, 400000, 0);
+        VALUES (v_id_facture, v_id_vp_1, 'Diffusion pub vol TNR-NOS 20/01 10h', 1, 400000, 400000, 200000);
+        
+        -- Paiement Vaniala: 200 000 Ar
+        INSERT INTO paiement (id_facture, date_paiement, montant_paye, mode_paiement, reference_paiement)
+        VALUES (v_id_facture, '2026-01-25', 200000, 'virement', 'VIR-2026-V001');
 
         -- Vol 20/01 10h: Pub Lewis 1 (400 000 Ar) - NON PAYÉE
         INSERT INTO facture (numero_facture, id_societe_diffuseur, date_facture, date_debut_periode, date_fin_periode, montant, statut)
