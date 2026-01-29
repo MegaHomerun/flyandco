@@ -292,7 +292,8 @@ INSERT INTO produit_extra (id_categorie_produit, code_produit, nom, description,
 ON CONFLICT (code_produit) DO NOTHING;
 
 -- ============================================================
--- DONNÉES DE TEST: Ventes de produits sur vols existants
+-- DONNÉES DE TEST: Ventes de produits sur vols TNR-Nosy Be (TR-045)
+-- TOTAL JANVIER 2026: 150 tablettes de chocolat
 -- ============================================================
 DO $$
 DECLARE
@@ -301,7 +302,7 @@ DECLARE
 BEGIN
     SELECT id_produit_extra INTO v_id_produit FROM produit_extra WHERE code_produit = 'CHOCO-001';
     
-    -- Ventes sur le vol 20/01 10h (TR-045)
+    -- Vol 20/01 10h (TR-045): 50 tablettes = 250 000 Ar
     SELECT vp.id_vol_programme INTO v_id_vp 
     FROM vol_programme vp
     JOIN avion a ON vp.id_avion = a.id_avion
@@ -311,10 +312,10 @@ BEGIN
     
     IF v_id_vp IS NOT NULL AND NOT EXISTS (SELECT 1 FROM vente_produit WHERE id_vol_programme = v_id_vp) THEN
         INSERT INTO vente_produit (id_vol_programme, id_produit_extra, quantite, prix_unitaire, montant_total, notes)
-        VALUES (v_id_vp, v_id_produit, 15, 5000, 75000, 'Vente chocolat vol 20/01 10h');
+        VALUES (v_id_vp, v_id_produit, 50, 5000, 250000, 'Vente chocolat vol 20/01 10h TNR-NOS');
     END IF;
     
-    -- Ventes sur le vol 21/01 10h
+    -- Vol 21/01 10h (TR-045): 50 tablettes = 250 000 Ar
     SELECT vp.id_vol_programme INTO v_id_vp 
     FROM vol_programme vp
     JOIN avion a ON vp.id_avion = a.id_avion
@@ -324,10 +325,10 @@ BEGIN
     
     IF v_id_vp IS NOT NULL AND NOT EXISTS (SELECT 1 FROM vente_produit WHERE id_vol_programme = v_id_vp) THEN
         INSERT INTO vente_produit (id_vol_programme, id_produit_extra, quantite, prix_unitaire, montant_total, notes)
-        VALUES (v_id_vp, v_id_produit, 20, 5000, 100000, 'Vente chocolat vol 21/01 10h');
+        VALUES (v_id_vp, v_id_produit, 50, 5000, 250000, 'Vente chocolat vol 21/01 10h TNR-NOS');
     END IF;
     
-    -- Ventes sur le vol 21/01 15h
+    -- Vol 21/01 15h (TR-045): 50 tablettes = 250 000 Ar
     SELECT vp.id_vol_programme INTO v_id_vp 
     FROM vol_programme vp
     JOIN avion a ON vp.id_avion = a.id_avion
@@ -337,6 +338,8 @@ BEGIN
     
     IF v_id_vp IS NOT NULL AND NOT EXISTS (SELECT 1 FROM vente_produit WHERE id_vol_programme = v_id_vp) THEN
         INSERT INTO vente_produit (id_vol_programme, id_produit_extra, quantite, prix_unitaire, montant_total, notes)
-        VALUES (v_id_vp, v_id_produit, 25, 5000, 125000, 'Vente chocolat vol 21/01 15h');
+        VALUES (v_id_vp, v_id_produit, 50, 5000, 250000, 'Vente chocolat vol 21/01 15h TNR-NOS');
     END IF;
+    
+    -- TOTAL: 50 + 50 + 50 = 150 tablettes | 750 000 Ar
 END $$;
