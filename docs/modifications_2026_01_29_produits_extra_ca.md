@@ -65,12 +65,12 @@
 | Code produit | Input texte | Oui | - |
 | Nom | Input texte | Oui | - |
 | Description | Input texte | Non | - |
-| Catégorie | Select | Oui | `CategorieProductRepository.findAll()` → `categorie_produit` |
+| Catégorie | Select | Oui | `CategorieProduitRepository.findAllActives()` → `categorie_produit WHERE actif=true` |
 | Prix unitaire | Input nombre | Oui | - |
 | Actif | Checkbox | Non | Défaut: true |
 
 ### Actions:
-- **[Enregistrer]** → `ProduitExtraService.save(produit)` → INSERT/UPDATE `produit_extra` → Redirige `/produits`
+- **[Enregistrer]** → `ProduitService.saveProduit(produit)` → INSERT/UPDATE `produit_extra` → Redirige `/produits`
 - **[Annuler]** → Redirige `/produits`
 
 ---
@@ -82,7 +82,7 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │ [Sidebar]  │  VENTES PRODUITS À BORD                               │
 │            │                                                         │
-│            │  Filtres: Vol [▼ Tous]  Date [____] à [____]          │
+│            │  Filtres: Date début [____] Date fin [____] [Filtrer] │
 │            │                                                         │
 │            │  [+ Nouvelle Vente]                                    │
 │            │                                                         │
@@ -123,15 +123,15 @@
 ### Champs du formulaire:
 | Champ | Type | Obligatoire | Source liste déroulante |
 |-------|------|-------------|-------------------------|
-| Vol programmé | Select | Oui | `VolProgrammeService.findAll()` → `vol_programme` + `aeroport` |
-| Produit | Select | Oui | `ProduitExtraService.findAllActifs()` → `produit_extra WHERE actif=true` |
+| Vol programmé | Select | Oui | `ProduitService.getAllVolsProgrammes()` → `vol_programme` + `aeroport` |
+| Produit | Select | Oui | `ProduitService.getProduitsActifs()` → `produit_extra WHERE actif=true` |
 | Quantité | Input nombre | Oui | - |
 | Prix unitaire | Affichage | - | Auto: `produit_extra.prix_unitaire` |
-| Montant total | Affichage | - | Calculé: quantité × prix_unitaire |
+| Montant total | Affichage | - | Calculé JS: quantité × prix_unitaire |
 | Notes | Input texte | Non | - |
 
 ### Actions:
-- **[Enregistrer]** → `VenteProductService.save(vente)` → INSERT `vente_produit` → Redirige `/ventes-produits`
+- **[Enregistrer]** → `ProduitService.creerVente(idVol, idProduit, qte, notes)` → INSERT `vente_produit` → Redirige `/ventes-produits`
 
 ---
 
@@ -142,20 +142,22 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │ [Sidebar]  │  CHIFFRE D'AFFAIRES MENSUEL                           │
 │            │                                                         │
-│            │  Mois: [▼ Janvier 2026 ]  [Filtrer]                   │
+│            │  Mois: [▼ Janvier] Année: [2026]  [Afficher]          │
+│            │                                                         │
+│            │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
+│            │  │🎫Tickets │ │📺Diffus. │ │🍫Produits│ │💰 TOTAL  │   │
+│            │  │96M Ar    │ │2M Ar     │ │300K Ar   │ │98.3M Ar  │   │
+│            │  │120 rés.  │ │5 diff.   │ │60 prods  │ │185 ops   │   │
+│            │  └──────────┘ └──────────┘ └[Détail]──┘ └──────────┘   │
 │            │                                                         │
 │            │  ┌─────────────────────────────────────────────────┐   │
-│            │  │ TYPE           │ NOMBRE    │ MONTANT            │   │
-│            │  │────────────────│───────────│────────────────────│   │
-│            │  │ 🎫 Tickets     │ 120       │ 96 000 000 Ar      │   │
-│            │  │ 📺 Diffusions  │ 5         │ 2 000 000 Ar       │   │
-│            │  │ 🍫 Produits    │ 60        │ 300 000 Ar         │   │
-│            │  │────────────────│───────────│────────────────────│   │
-│            │  │ TOTAL          │ 185       │ 98 300 000 Ar      │   │
+│            │  │ TYPE           │ NOMBRE    │ MONTANT    │ 👁️   │   │
+│            │  │────────────────│───────────│────────────│──────│   │
+│            │  │ Tickets        │ 120       │ 96 000 000 │  👁️  │   │
+│            │  │ Diffusions     │ 5         │ 2 000 000  │  👁️  │   │
+│            │  │ Produits Extra │ 60        │ 300 000    │  👁️  │   │
+│            │  │ TOTAL          │ 185       │ 98 300 000 │      │   │
 │            │  └─────────────────────────────────────────────────┘   │
-│            │                                                         │
-│            │  [Voir détail Tickets] [Voir détail Diffusions]       │
-│            │  [Voir détail Produits]                                │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -163,20 +165,18 @@
 | Champ | Type | Source |
 |-------|------|--------|
 | Type | Texte | Constantes (Tickets/Diffusions/Produits) |
-| Nombre | Entier | Vue `v_ca_mensuel_detail` colonnes nb_* |
-| Montant | Nombre formaté | Vue `v_ca_mensuel_detail` colonnes ca_* |
+| Nombre | Entier | `CAMensuelService.getCAMensuel()` |
+| Montant | Nombre formaté | `CAMensuelService.getCAMensuel()` |
 
 ### Actions:
-- **[Filtrer]** → `CAMensuelService.getByMonth(mois)` → Vue `v_ca_mensuel_detail`
-- **[Voir détail Tickets]** → `/ca-mensuel/tickets?mois=2026-01`
-- **[Voir détail Diffusions]** → `/ca-mensuel/diffusions?mois=2026-01`
-- **[Voir détail Produits]** → `/ca-mensuel/produits?mois=2026-01`
+- **[Afficher]** → `CAMensuelService.getCAMensuel(annee, mois)` → Rafraîchit page
+- **[👁️ Produits]** → `/ca-mensuel/produits?annee=2026&mois=1`
 
 ---
 
 ## 1.6 Page Détail CA Produits
 
-### Écran: `/ca-mensuel/produits?mois=2026-01`
+### Écran: `/ca-mensuel/produits?annee=2026&mois=1`
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │ [Sidebar]  │  CA PRODUITS - JANVIER 2026                           │
@@ -211,11 +211,14 @@
 │   /produits  │  │/ventes-produ │  │  /ca-mensuel │  │              │
 └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────────────┘
        │                 │                 │
-       ▼                 ▼                 ├──► /ca-mensuel/tickets
-┌──────────────┐  ┌──────────────┐         ├──► /ca-mensuel/diffusions
-│ Form Produit │  │ Form Vente   │         └──► /ca-mensuel/produits
-│/produits/new │  │/ventes/new   │
-└──────────────┘  └──────────────┘
+       ▼                 ▼                 ├──► /ca-mensuel/produits
+┌──────────────┐  ┌──────────────┐         └──► /ca-mensuel/factures-produits
+│ Form Produit │  │ Form Vente   │                      │
+│/produits/new │  │/ventes/new   │                      ▼
+└──────────────┘  └──────────────┘              ┌──────────────┐
+                                               │Détail Facture│
+                                               │  + Paiement  │
+                                               └──────────────┘
 ```
 
 ---
@@ -293,32 +296,208 @@
 ## 2.2 Nouvelles Vues
 
 ### `v_ca_produits_vol`
-CA produits par vol programmé avec détail par produit.
+**Objectif:** Calculer le CA des produits vendus par vol programmé.
+
+**Tables utilisées:**
+```
+vente_produit (vp)
+    └── vol_programme (volp) via vp.id_vol_programme
+           ├── vol (v) via volp.id_vol
+           ├── aeroport depart (ad) via volp.id_aeroport_depart
+           └── aeroport arrivee (aa) via volp.id_aeroport_arrivee
+    └── produit_extra (pe) via vp.id_produit_extra
+           └── categorie_produit (cp) via pe.id_categorie_produit
+```
+
+**Jointures:**
+| Table source | Table cible | Clé FK |
+|--------------|-------------|--------|
+| `vente_produit` | `vol_programme` | `id_vol_programme` |
+| `vol_programme` | `aeroport` (départ) | `id_aeroport_depart` |
+| `vol_programme` | `aeroport` (arrivée) | `id_aeroport_arrivee` |
+| `vente_produit` | `produit_extra` | `id_produit_extra` |
+| `produit_extra` | `categorie_produit` | `id_categorie_produit` |
+
+**Opérations:**
+- GROUP BY `id_vol_programme`, `date_vol`
+- SUM `quantite` → total quantité vendue par vol
+- SUM `montant_total` → CA total par vol
+
+---
 
 ### `v_ca_mensuel`
-CA agrégé par mois et par type (Tickets, Diffusions, Produits).
+**Objectif:** Agréger le CA total par mois en combinant tickets, diffusions et produits.
+
+**Tables utilisées:**
+```
+1. CA Tickets:
+   detail_reservation (dr)
+       └── reservation (r) via dr.id_reservation
+              └── vol_programme (vp) via r.id_vol_programme
+
+2. CA Diffusions:
+   detail_facture (df)
+       └── facture (f) via df.id_facture
+       └── diffusion (d) via df.id_diffusion
+              └── vol_programme (vp) via d.id_vol_programme
+
+3. CA Produits:
+   vente_produit (vp)
+       └── vol_programme (volp) via vp.id_vol_programme
+```
+
+**Jointures pour CA Tickets:**
+| Table source | Table cible | Clé FK | Opération |
+|--------------|-------------|--------|-----------|
+| `detail_reservation` | `reservation` | `id_reservation` | INNER JOIN |
+| `reservation` | `vol_programme` | `id_vol_programme` | INNER JOIN |
+
+**Jointures pour CA Diffusions:**
+| Table source | Table cible | Clé FK | Opération |
+|--------------|-------------|--------|-----------|
+| `detail_facture` | `facture` | `id_facture` | INNER JOIN |
+| `detail_facture` | `diffusion` | `id_diffusion` | INNER JOIN |
+| `diffusion` | `vol_programme` | `id_vol_programme` | INNER JOIN |
+
+**Jointures pour CA Produits:**
+| Table source | Table cible | Clé FK | Opération |
+|--------------|-------------|--------|-----------|
+| `vente_produit` | `vol_programme` | `id_vol_programme` | INNER JOIN |
+
+**Opérations:**
+- EXTRACT(YEAR/MONTH FROM date_vol) → groupement par mois
+- COUNT(*) → nombre d'opérations par type
+- SUM(montant) → CA par type
+- UNION ALL des 3 sources avec type='TICKET'|'DIFFUSION'|'PRODUIT'
+
+---
 
 ### `v_ca_mensuel_detail`
-CA mensuel détaillé avec colonnes séparées:
-- nb_tickets, ca_tickets
-- nb_diffusions, ca_diffusions
-- nb_produits, ca_produits
-- ca_total
+**Objectif:** Fournir un résumé mensuel avec colonnes séparées pour chaque type de CA.
+
+**Dérivée de:** `v_ca_mensuel`
+
+**Structure résultat:**
+| Colonne | Calcul |
+|---------|--------|
+| `annee` | EXTRACT(YEAR FROM date_vol) |
+| `mois` | EXTRACT(MONTH FROM date_vol) |
+| `nb_tickets` | COUNT WHERE type='TICKET' |
+| `ca_tickets` | SUM(montant) WHERE type='TICKET' |
+| `nb_diffusions` | COUNT WHERE type='DIFFUSION' |
+| `ca_diffusions` | SUM(montant) WHERE type='DIFFUSION' |
+| `nb_produits` | COUNT WHERE type='PRODUIT' |
+| `ca_produits` | SUM(montant) WHERE type='PRODUIT' |
+| `ca_total` | SUM(ca_tickets + ca_diffusions + ca_produits) |
+
+**Opérations:**
+- Pivotage avec FILTER (WHERE type = ...) 
+- GROUP BY annee, mois
+- COALESCE pour gérer les NULL → 0
 
 ---
 
 ## 2.3 Nouvelles Fonctions
 
 ### `update_facture_produit_statut()`
-Trigger après INSERT/UPDATE sur `paiement_produit`.
-Met à jour automatiquement le statut de `facture_produit`.
+**Type:** Trigger AFTER INSERT/UPDATE sur `paiement_produit`
 
-### `repartir_paiement_produit_prorata(id_facture, montant)`
-Répartit un paiement au prorata sur les lignes de `detail_facture_produit`.
+**Logique:**
+1. Calcule la somme des paiements pour la facture concernée
+2. Compare avec le montant total de la facture
+3. Met à jour le statut:
+   - `payée` si somme_paiements >= montant
+   - `partiellement_payée` si 0 < somme_paiements < montant
+   - `émise` si aucun paiement
+
+```sql
+-- Pseudocode
+total_paye = SELECT SUM(montant_paye) FROM paiement_produit WHERE id_facture = NEW.id_facture;
+montant_facture = SELECT montant FROM facture_produit WHERE id_facture = NEW.id_facture;
+
+IF total_paye >= montant_facture THEN
+    UPDATE facture_produit SET statut = 'payée';
+ELSIF total_paye > 0 THEN
+    UPDATE facture_produit SET statut = 'partiellement_payée';
+END IF;
+```
 
 ---
 
-## 2.4 Script SQL
+### `repartir_paiement_produit_prorata(id_facture, montant)`
+**Type:** Fonction appelée lors d'un paiement partiel
+
+**Principe du prorata:**
+Quand une facture contient plusieurs lignes (plusieurs ventes de produits), un paiement partiel est réparti proportionnellement au montant de chaque ligne.
+
+**Exemple:**
+```
+Facture: 100 000 Ar
+├── Ligne 1 (chocolats): 60 000 Ar (60% du total)
+└── Ligne 2 (boissons): 40 000 Ar (40% du total)
+
+Paiement de 50 000 Ar → répartition:
+├── Ligne 1: 50 000 × 60% = 30 000 Ar
+└── Ligne 2: 50 000 × 40% = 20 000 Ar
+```
+
+**Logique:**
+```sql
+-- Pour chaque ligne de détail de la facture:
+UPDATE detail_facture_produit
+SET montant_paye = montant_paye + (montant_paiement * (montant_ligne / montant_total_facture))
+WHERE id_facture_produit = id_facture;
+```
+
+---
+
+## 2.4 Requêtes SQL du Service CA Mensuel
+
+### Requête: Calcul CA Tickets
+```sql
+SELECT 
+    EXTRACT(YEAR FROM vp.date_vol) AS annee,
+    EXTRACT(MONTH FROM vp.date_vol) AS mois,
+    COUNT(DISTINCT r.id_reservation) AS nb_tickets,
+    COALESCE(SUM(dr.prix_paye), 0) AS ca_tickets
+FROM detail_reservation dr
+INNER JOIN reservation r ON dr.id_reservation = r.id_reservation
+INNER JOIN vol_programme vp ON r.id_vol_programme = vp.id_vol_programme
+WHERE vp.date_vol BETWEEN :dateDebut AND :dateFin
+GROUP BY EXTRACT(YEAR FROM vp.date_vol), EXTRACT(MONTH FROM vp.date_vol)
+```
+
+### Requête: Calcul CA Diffusions
+```sql
+SELECT 
+    EXTRACT(YEAR FROM vp.date_vol) AS annee,
+    EXTRACT(MONTH FROM vp.date_vol) AS mois,
+    COUNT(DISTINCT d.id_diffusion) AS nb_diffusions,
+    COALESCE(SUM(df.montant_paye), 0) AS ca_diffusions
+FROM detail_facture df
+INNER JOIN facture f ON df.id_facture = f.id_facture
+INNER JOIN diffusion d ON df.id_diffusion = d.id_diffusion
+INNER JOIN vol_programme vp ON d.id_vol_programme = vp.id_vol_programme
+WHERE vp.date_vol BETWEEN :dateDebut AND :dateFin
+GROUP BY EXTRACT(YEAR FROM vp.date_vol), EXTRACT(MONTH FROM vp.date_vol)
+```
+
+### Requête: Calcul CA Produits
+```sql
+SELECT 
+    EXTRACT(YEAR FROM vp.date_vol) AS annee,
+    EXTRACT(MONTH FROM vp.date_vol) AS mois,
+    COUNT(*) AS nb_produits,
+    COALESCE(SUM(vente.montant_total), 0) AS ca_produits
+FROM vente_produit vente
+INNER JOIN vol_programme vp ON vente.id_vol_programme = vp.id_vol_programme
+WHERE vp.date_vol BETWEEN :dateDebut AND :dateFin
+GROUP BY EXTRACT(YEAR FROM vp.date_vol), EXTRACT(MONTH FROM vp.date_vol)
+```
+
+---
+
+## 2.5 Script SQL
 Fichier: `src/bd/10_produits_extra.sql`
 
 ---
@@ -444,27 +623,87 @@ Fichier: `src/bd/10_produits_extra.sql`
 - [ ] Vérifier création tables et vues
 - [ ] Vérifier données test insérées
 
-## 4.2 Backend (Java)
-- [ ] Créer entités: `CategorieProduit`, `ProduitExtra`, `VenteProduit`
-- [ ] Créer entités: `FactureProduit`, `DetailFactureProduit`, `PaiementProduit`
-- [ ] Créer repositories correspondants
-- [ ] Créer `ProduitExtraService` avec CRUD
-- [ ] Créer `VenteProduitService` avec filtres
-- [ ] Créer `CAMensuelService` avec requêtes vues
-- [ ] Créer `FactureProduitService` avec logique prorata
-- [ ] Créer controllers avec endpoints
+## 4.2 Backend (Java) ✅ TERMINÉ
+- [x] Créer entités: `CategorieProduit`, `ProduitExtra`, `VenteProduit`
+- [x] Créer entités: `FactureProduit`, `DetailFactureProduit`, `PaiementProduit`
+- [x] Créer repositories correspondants
+- [x] Créer `ProduitService` avec CRUD
+- [x] Créer `CAMensuelService` avec requêtes natives
+- [x] Créer `CAMensuelDTO` pour les données
+- [x] Créer controllers avec endpoints (`ProduitController`, `VenteProduitController`, `CAMensuelController`)
 
-## 4.3 Frontend (Thymeleaf)
-- [ ] Créer template `views/produits/list.html`
-- [ ] Créer template `views/produits/form.html`
-- [ ] Créer template `views/ventes-produits/list.html`
-- [ ] Créer template `views/ventes-produits/form.html`
-- [ ] Créer template `views/ca-mensuel/index.html`
-- [ ] Créer template `views/ca-mensuel/detail-produits.html`
-- [ ] Ajouter liens sidebar
+## 4.3 Frontend (Thymeleaf) ✅ TERMINÉ
+- [x] Créer template `views/produits/list.html`
+- [x] Créer template `views/produits/form.html`
+- [x] Créer template `views/produits/ventes-list.html`
+- [x] Créer template `views/produits/vente-form.html`
+- [x] Créer template `views/produits/ca-mensuel.html`
+- [x] Créer template `views/produits/ca-detail-produits.html`
+- [x] Créer template `views/produits/factures-list.html`
+- [x] Créer template `views/produits/facture-detail.html`
+- [x] Créer template `views/produits/facture-form.html`
+- [x] Créer template `views/produits/paiement-form.html`
+- [x] Ajouter liens sidebar (menu Produits Extra + lien CA Mensuel)
 
 ## 4.4 Tests
 - [ ] Tester CRUD produits
 - [ ] Tester enregistrement ventes
 - [ ] Tester calcul CA mensuel
 - [ ] Tester paiement prorata factures
+
+---
+
+# 5. FICHIERS CRÉÉS
+
+## 5.1 Modèles (Entités JPA)
+| Fichier | Chemin |
+|---------|--------|
+| `CategorieProduit.java` | `src/main/java/com/fly/andco/model/produits/` |
+| `ProduitExtra.java` | `src/main/java/com/fly/andco/model/produits/` |
+| `VenteProduit.java` | `src/main/java/com/fly/andco/model/produits/` |
+| `FactureProduit.java` | `src/main/java/com/fly/andco/model/produits/` |
+| `DetailFactureProduit.java` | `src/main/java/com/fly/andco/model/produits/` |
+| `PaiementProduit.java` | `src/main/java/com/fly/andco/model/produits/` |
+
+## 5.2 Repositories
+| Fichier | Chemin |
+|---------|--------|
+| `CategorieProduitRepository.java` | `src/main/java/com/fly/andco/repository/produits/` |
+| `ProduitExtraRepository.java` | `src/main/java/com/fly/andco/repository/produits/` |
+| `VenteProduitRepository.java` | `src/main/java/com/fly/andco/repository/produits/` |
+| `FactureProduitRepository.java` | `src/main/java/com/fly/andco/repository/produits/` |
+| `DetailFactureProduitRepository.java` | `src/main/java/com/fly/andco/repository/produits/` |
+| `PaiementProduitRepository.java` | `src/main/java/com/fly/andco/repository/produits/` |
+
+## 5.3 Services
+| Fichier | Chemin |
+|---------|--------|
+| `ProduitService.java` | `src/main/java/com/fly/andco/service/produits/` |
+| `CAMensuelService.java` | `src/main/java/com/fly/andco/service/produits/` |
+| `CAMensuelDTO.java` | `src/main/java/com/fly/andco/service/produits/` |
+
+## 5.4 Controllers
+| Fichier | Chemin |
+|---------|--------|
+| `ProduitController.java` | `src/main/java/com/fly/andco/controller/produits/` |
+| `VenteProduitController.java` | `src/main/java/com/fly/andco/controller/produits/` |
+| `CAMensuelController.java` | `src/main/java/com/fly/andco/controller/produits/` |
+
+## 5.5 Templates Thymeleaf
+| Fichier | Chemin |
+|---------|--------|
+| `list.html` | `src/main/resources/templates/views/produits/` |
+| `form.html` | `src/main/resources/templates/views/produits/` |
+| `ventes-list.html` | `src/main/resources/templates/views/produits/` |
+| `vente-form.html` | `src/main/resources/templates/views/produits/` |
+| `ca-mensuel.html` | `src/main/resources/templates/views/produits/` |
+| `ca-detail-produits.html` | `src/main/resources/templates/views/produits/` |
+| `factures-list.html` | `src/main/resources/templates/views/produits/` |
+| `facture-detail.html` | `src/main/resources/templates/views/produits/` |
+| `facture-form.html` | `src/main/resources/templates/views/produits/` |
+| `paiement-form.html` | `src/main/resources/templates/views/produits/` |
+
+## 5.6 Fichiers modifiés
+| Fichier | Modification |
+|---------|--------------|
+| `sidebar.html` | Ajout menu "Produits Extra" et lien "CA Mensuel" |
