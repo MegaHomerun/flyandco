@@ -80,7 +80,7 @@ INSERT INTO Client (nom, prenom, email, telephone) VALUES
 -- INSERTION: RÉSERVATIONS
 -- ============================================================
 INSERT INTO Reservation (id_client, id_vol_programme, nombre_places, statut) VALUES
-(1, 1, 2, 'confirmée');
+-- (1, 1, 2, 'confirmée');
 
 -- ============================================================
 -- INSERTION: TYPES DE PLACES
