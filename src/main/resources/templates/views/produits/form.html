@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${titre} + ' - FlyAndCo'">Produit - FlyAndCo</title>
+    <link rel="stylesheet" th:href="@{/assets/compiled/css/app.css}">
+    <link rel="stylesheet" th:href="@{/assets/compiled/css/app-dark.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+    <div id="app">
+        <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+        
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            
+            <div class="page-heading">
+                <div class="page-title">
+                    <div class="row">
+                        <div class="col-12 col-md-6 order-md-1 order-last">
+                            <h3><i class="bi bi-box-seam"></i> <span th:text="${titre}"></span></h3>
+                            <p class="text-subtitle text-muted">Informations du produit</p>
+                        </div>
+                        <div class="col-12 col-md-6 order-md-2 order-first">
+                            <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a th:href="@{/home}">Accueil</a></li>
+                                    <li class="breadcrumb-item"><a th:href="@{/produits}">Produits</a></li>
+                                    <li class="breadcrumb-item active" th:text="${titre}"></li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <section class="section">
+                <div class="card">
+                    <div class="card-body">
+                        <form th:action="@{/produits/save}" method="post">
+                            <input type="hidden" name="idProduitExtra" th:value="${produit.idProduitExtra}">
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="codeProduit" class="form-label">Code produit <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="codeProduit" name="codeProduit" 
+                                           th:value="${produit.codeProduit}" required maxlength="20"
+                                           placeholder="Ex: CHOCO-002">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="nom" name="nom" 
+                                           th:value="${produit.nom}" required maxlength="100"
+                                           placeholder="Nom du produit">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="idCategorieProduit" class="form-label">Catégorie <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="idCategorieProduit" name="idCategorieProduit" required>
+                                        <option value="">-- Sélectionner --</option>
+                                        <option th:each="cat : ${categories}" 
+                                                th:value="${cat.idCategorieProduit}" 
+                                                th:text="${cat.nom}"
+                                                th:selected="${produit.categorieProduit != null && produit.categorieProduit.idCategorieProduit == cat.idCategorieProduit}">
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <input type="text" class="form-control" id="description" name="description" 
+                                           th:value="${produit.description}" maxlength="255"
+                                           placeholder="Description optionnelle">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="prixUnitaire" class="form-label">Prix unitaire (Ar) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="prixUnitaire" name="prixUnitaire" 
+                                           th:value="${produit.prixUnitaire}" required min="0" step="100"
+                                           placeholder="5000">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="actif" name="actif" 
+                                               th:checked="${produit.actif == null || produit.actif}">
+                                        <label class="form-check-label" for="actif">Produit actif</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg"></i> Enregistrer
+                                </button>
+                                <a th:href="@{/produits}" class="btn btn-secondary">
+                                    <i class="bi bi-x-lg"></i> Annuler
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/assets/static/js/initTheme.js}"></script>
+    <script th:src="@{/assets/compiled/js/app.js}"></script>
+</body>
+</html>
