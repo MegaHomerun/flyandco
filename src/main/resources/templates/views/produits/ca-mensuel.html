@@ -9,17 +9,22 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         .ca-card {
-            border-radius: 15px;
-            transition: transform 0.2s;
+            border-radius: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .ca-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
-        .ca-tickets { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .ca-diffusions { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .ca-produits { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .ca-total { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
-        .ca-icon { font-size: 2.5rem; opacity: 0.8; }
+        .ca-tickets { background-color: #435ebe; }
+        .ca-diffusions { background-color: #25396f; }
+        .ca-produits { background-color: #198754; }
+        .ca-total { background-color: #dc3545; }
+        .ca-icon { font-size: 2.5rem; opacity: 0.9; }
+        .table-hover tbody tr:hover {
+            background-color: rgba(67, 94, 190, 0.05);
+        }
     </style>
 </head>
 <body>
@@ -200,37 +205,37 @@
                                     <tr>
                                         <td><i class="bi bi-ticket-perforated text-primary me-2"></i> Tickets (Réservations)</td>
                                         <td class="text-center" th:text="${ca.nbTickets}"></td>
-                                        <td class="text-end" th:text="${ca.caTicketsFormate}"></td>
+                                        <td class="text-end fw-semibold" th:text="${ca.caTicketsFormate}"></td>
                                         <td class="text-center">
-                                            <a th:href="@{/booking/mes-reservations}" class="btn btn-sm btn-outline-primary">
+                                            <a th:href="@{/booking/mes-reservations}" class="btn btn-sm btn-outline-secondary">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td><i class="bi bi-broadcast text-danger me-2"></i> Diffusions Publicitaires</td>
+                                        <td><i class="bi bi-broadcast text-secondary me-2"></i> Diffusions Publicitaires</td>
                                         <td class="text-center" th:text="${ca.nbDiffusions}"></td>
-                                        <td class="text-end" th:text="${ca.caDiffusionsFormate}"></td>
+                                        <td class="text-end fw-semibold" th:text="${ca.caDiffusionsFormate}"></td>
                                         <td class="text-center">
-                                            <a th:href="@{/diffusions/ca}" class="btn btn-sm btn-outline-primary">
+                                            <a th:href="@{/diffusions/ca}" class="btn btn-sm btn-outline-secondary">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td><i class="bi bi-box-seam text-info me-2"></i> Produits Extra</td>
+                                        <td><i class="bi bi-box-seam text-success me-2"></i> Produits Extra</td>
                                         <td class="text-center" th:text="${ca.nbProduits}"></td>
-                                        <td class="text-end" th:text="${ca.caProduitsFormate}"></td>
+                                        <td class="text-end fw-semibold" th:text="${ca.caProduitsFormate}"></td>
                                         <td class="text-center">
                                             <a th:href="@{/ca-mensuel/produits(annee=${anneeSelectionnee}, mois=${moisSelectionne})}" 
-                                               class="btn btn-sm btn-outline-primary">
+                                               class="btn btn-sm btn-outline-secondary">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                         </td>
                                     </tr>
                                 </tbody>
                                 <tfoot>
-                                    <tr class="table-success fw-bold">
+                                    <tr class="table-light fw-bold fs-5">
                                         <td><i class="bi bi-calculator me-2"></i> TOTAL</td>
                                         <td class="text-center" th:text="${ca.nbTotal}"></td>
                                         <td class="text-end" th:text="${ca.caTotalFormate}"></td>
