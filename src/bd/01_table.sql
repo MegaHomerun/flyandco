@@ -1,7 +1,7 @@
 -- ============================================================
 -- Script de création des tables
 -- FlyAndCo - Système de gestion de compagnie aérienne
--- Date: 2026-01-16
+-- Date: 2026-01-29
 -- ============================================================
 
 -- ============================================================
@@ -181,6 +181,91 @@ CREATE TABLE detail_reservation (
 );
 
 -- ============================================================
+-- TABLE SOCIETE_DIFFUSEUR
+-- Sociétés clientes qui diffusent des vidéos publicitaires
+-- ============================================================
+CREATE TABLE societe_diffuseur (
+    id_societe_diffuseur SERIAL PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE,
+    telephone VARCHAR(30),
+    adresse VARCHAR(255),
+    date_creation TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================================
+-- TABLE TARIF_DIFFUSION
+-- Tarifs de diffusion (par défaut ou spécifiques par société)
+-- ============================================================
+CREATE TABLE tarif_diffusion (
+    id_tarif_diffusion SERIAL PRIMARY KEY,
+    id_societe_diffuseur INT REFERENCES societe_diffuseur(id_societe_diffuseur) ON DELETE CASCADE,
+    id_vol INT REFERENCES Vol(id_vol) ON DELETE CASCADE,
+    id_type_place INT REFERENCES type_place(id_type_place) ON DELETE CASCADE,
+    prix_unitaire NUMERIC(12,2) NOT NULL,
+    actif BOOLEAN DEFAULT TRUE,
+    date_debut_validite DATE,
+    date_fin_validite DATE
+);
+
+CREATE INDEX idx_tarif_diffusion_societe ON tarif_diffusion(id_societe_diffuseur);
+
+-- ============================================================
+-- TABLE FACTURE (Simplifiée - sans TVA)
+-- Paiements multiples autorisés sans échéancier obligatoire
+-- ============================================================
+CREATE TABLE facture (
+    id_facture SERIAL PRIMARY KEY,
+    numero_facture VARCHAR(50) UNIQUE NOT NULL,
+    id_societe_diffuseur INT NOT NULL REFERENCES societe_diffuseur(id_societe_diffuseur),
+    date_facture DATE NOT NULL,
+    date_debut_periode DATE NOT NULL,
+    date_fin_periode DATE NOT NULL,
+    montant NUMERIC(12,2) NOT NULL,
+    statut VARCHAR(30) DEFAULT 'émise' CHECK (statut IN ('émise', 'partiellement_payée', 'payée', 'annulée')),
+    notes TEXT,
+    date_creation TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_facture_societe ON facture(id_societe_diffuseur);
+CREATE INDEX idx_facture_date ON facture(date_facture);
+CREATE INDEX idx_facture_periode ON facture(date_debut_periode, date_fin_periode);
+
+-- ============================================================
+-- TABLE DETAIL_FACTURE (avec suivi paiement prorata)
+-- ============================================================
+CREATE TABLE detail_facture (
+    id_detail_facture SERIAL PRIMARY KEY,
+    id_facture INT NOT NULL REFERENCES facture(id_facture) ON DELETE CASCADE,
+    id_vol_programme INT REFERENCES vol_programme(id_vol_programme),
+    id_type_place INT REFERENCES type_place(id_type_place),
+    description VARCHAR(255),
+    nombre_diffusions INT NOT NULL,
+    prix_unitaire NUMERIC(12,2) NOT NULL,
+    montant_ligne NUMERIC(12,2) NOT NULL,
+    montant_paye NUMERIC(12,2) DEFAULT 0
+);
+
+CREATE INDEX idx_detail_facture_facture ON detail_facture(id_facture);
+
+-- ============================================================
+-- TABLE PAIEMENT (Paiements multiples sans échéancier obligatoire)
+-- ============================================================
+CREATE TABLE paiement (
+    id_paiement SERIAL PRIMARY KEY,
+    id_facture INT NOT NULL REFERENCES facture(id_facture) ON DELETE CASCADE,
+    date_paiement DATE NOT NULL,
+    montant_paye NUMERIC(12,2) NOT NULL,
+    mode_paiement VARCHAR(50) CHECK (mode_paiement IN ('virement', 'espèces', 'chèque', 'mobile_money', 'carte')),
+    reference_paiement VARCHAR(100),
+    notes TEXT,
+    date_creation TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_paiement_facture ON paiement(id_paiement);
+CREATE INDEX idx_paiement_date ON paiement(date_paiement);
+
+-- ============================================================
 -- VUE: Valeur maximale par avion pour un vol
 -- Calcule le revenu potentiel max d'un avion sur une route
 -- ============================================================
@@ -258,6 +343,26 @@ GROUP BY vp.id_vol_programme, a.modele, a.numero_immatriculation,
          ad.code_iata, aa.code_iata, vp.date_heure_depart;
 
 -- ============================================================
+-- VUE: Résumé par société avec reste à payer
+-- ============================================================
+CREATE OR REPLACE VIEW v_resume_paiement_societe AS
+SELECT 
+    sd.id_societe_diffuseur,
+    sd.nom AS societe,
+    COALESCE(SUM(df.nombre_diffusions), 0) AS total_diffusions,
+    COALESCE(SUM(f.montant), 0) AS total_facture,
+    COALESCE((SELECT SUM(p.montant_paye) FROM paiement p 
+              JOIN facture f2 ON p.id_facture = f2.id_facture 
+              WHERE f2.id_societe_diffuseur = sd.id_societe_diffuseur AND f2.statut != 'annulée'), 0) AS total_paye,
+    COALESCE(SUM(f.montant), 0) - COALESCE((SELECT SUM(p.montant_paye) FROM paiement p 
+              JOIN facture f2 ON p.id_facture = f2.id_facture 
+              WHERE f2.id_societe_diffuseur = sd.id_societe_diffuseur AND f2.statut != 'annulée'), 0) AS reste_a_payer
+FROM societe_diffuseur sd
+LEFT JOIN facture f ON sd.id_societe_diffuseur = f.id_societe_diffuseur AND f.statut != 'annulée'
+LEFT JOIN detail_facture df ON f.id_facture = df.id_facture
+GROUP BY sd.id_societe_diffuseur, sd.nom;
+
+-- ============================================================
 -- FONCTION: Obtenir le prix applicable pour un passager
 -- Logique: prix fixe > pourcentage du tarif adulte > tarif_vol
 -- ============================================================
@@ -320,5 +425,57 @@ BEGIN
     WHERE id_vol = p_id_vol AND id_type_place = p_id_type_place;
     
     RETURN COALESCE(v_prix, 0);
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================
+-- FONCTION: Mettre à jour le statut de la facture après paiement
+-- ============================================================
+CREATE OR REPLACE FUNCTION update_facture_statut()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_montant_facture NUMERIC(12,2);
+    v_total_paye NUMERIC(12,2);
+BEGIN
+    SELECT montant INTO v_montant_facture FROM facture WHERE id_facture = NEW.id_facture;
+    SELECT COALESCE(SUM(montant_paye), 0) INTO v_total_paye FROM paiement WHERE id_facture = NEW.id_facture;
+    
+    IF v_total_paye >= v_montant_facture THEN
+        UPDATE facture SET statut = 'payée' WHERE id_facture = NEW.id_facture;
+    ELSIF v_total_paye > 0 THEN
+        UPDATE facture SET statut = 'partiellement_payée' WHERE id_facture = NEW.id_facture;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_facture_statut
+AFTER INSERT OR UPDATE ON paiement
+FOR EACH ROW EXECUTE FUNCTION update_facture_statut();
+
+-- ============================================================
+-- FONCTION: Répartition prorata d'un paiement sur les lignes
+-- ============================================================
+CREATE OR REPLACE FUNCTION repartir_paiement_prorata(p_id_facture INT, p_montant_paiement NUMERIC)
+RETURNS VOID AS $$
+DECLARE
+    v_montant_total NUMERIC(12,2);
+    v_ligne RECORD;
+    v_part_ligne NUMERIC(12,2);
+BEGIN
+    -- Récupérer le montant total de la facture
+    SELECT montant INTO v_montant_total FROM facture WHERE id_facture = p_id_facture;
+    
+    -- Répartir le paiement au prorata sur chaque ligne
+    FOR v_ligne IN SELECT * FROM detail_facture WHERE id_facture = p_id_facture
+    LOOP
+        -- Calcul prorata: part_ligne = paiement × (montant_ligne / montant_total)
+        v_part_ligne := p_montant_paiement * (v_ligne.montant_ligne / v_montant_total);
+        
+        UPDATE detail_facture 
+        SET montant_paye = COALESCE(montant_paye, 0) + v_part_ligne
+        WHERE id_detail_facture = v_ligne.id_detail_facture;
+    END LOOP;
 END;
 $$ LANGUAGE plpgsql;
