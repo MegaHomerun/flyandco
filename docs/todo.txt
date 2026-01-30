@@ -1,0 +1,13 @@
+Annonce importante à faire:: les incohérences flagrantes par rapport aux listes à faire envoyés précédemment génèrent des notes
+négatives
+Rédiger les à faire global en tenant compte de toutes les fonctionnalités et règles de gestions demandés
+1. MCD complet
+2. Liste des class complets (sans attribut)
+3. Par fonctionnalité demandée
+3.1. Dessin d'écran
+3.2. Signature des fonctions utilisées + précision de son emplacement par rapport aux class
+3.3. Vue ou table utilisée
+3.4.Pour les vues, préciser
+    3.4.1.Les colonnes
+    3.4.2. La table / vue principale
+    3.4.3. Table / vue annexe avec son type de liaison avec la table/ vue principale et la colonne de liaison
